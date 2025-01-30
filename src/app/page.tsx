@@ -1,15 +1,14 @@
-import { Navbar } from "@/components/Navbar"
-import { HeroSection } from "@/components/HeroSection"
+import { Footer } from "@/components/Footer"
+import { Header } from "@/components/Header"
+import { Hero } from "@/components/Hero"
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow">
-        <HeroSection />
-        {/* Add more sections or content here */}
-      </main>
-    </div>
+      <>
+      <Header />
+      <Hero />
+      <Footer />
+      </>
   )
 }
 
