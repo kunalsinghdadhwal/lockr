@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
 import {
 	Tooltip,
 	TooltipContent,
@@ -15,14 +14,23 @@ import {
 import { Facebook, Instagram, Linkedin, Moon, Send, Sun, Twitter } from "lucide-react"
 
 function Footer() {
-	const [isDarkMode, setIsDarkMode] = React.useState(true)
+	const [isDarkMode, setIsDarkMode] = React.useState(() => {
+		// Load theme from local storage
+		if (typeof window !== "undefined") {
+			const savedTheme = localStorage.getItem("theme")
+			return savedTheme ? savedTheme === "dark" : true
+		}
+		return true
+	})
 	const [isChatOpen, setIsChatOpen] = React.useState(false)
 
 	React.useEffect(() => {
 		if (isDarkMode) {
 			document.documentElement.classList.add("dark")
+			localStorage.setItem("theme", "dark")
 		} else {
 			document.documentElement.classList.remove("dark")
+			localStorage.setItem("theme", "light")
 		}
 	}, [isDarkMode])
 
@@ -172,4 +180,4 @@ function Footer() {
 	)
 }
 
-export { Footer}
+export { Footer }
