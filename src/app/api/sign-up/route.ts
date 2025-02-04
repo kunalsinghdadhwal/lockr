@@ -2,7 +2,7 @@ import { db } from "@/db/drizzle";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { eq, and } from "drizzle-orm";
-import { sendVerificationEmail } from "@/helpers/sendVerificatiionEmail";
+import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
 import { users } from "@/db/schema";
 
 export async function POST(req: Request) {
