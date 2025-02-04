@@ -5,7 +5,7 @@ import { useTheme } from "next-themes"
 import { Particles } from "@/components/ui/particles"
 
 export function signIn() {
-    const theme = localStorage.getItem("theme")
+  const { theme } = useTheme();
     const [color, setColor] = useState("#ffffff")
     
     useEffect(() => {

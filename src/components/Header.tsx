@@ -1,5 +1,5 @@
 import { Book, Menu, Sunset, Trees, Zap } from "lucide-react";
-
+import { JSX } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -57,10 +57,10 @@ interface Navbar1Props {
 
 const Header = ({
   logo = {
-    url: "https://www.shadcnblocks.com",
+    url: "#",
     src: "https://www.shadcnblocks.com/images/block/block-1.svg",
     alt: "logo",
-    title: "Shadcnblocks.com",
+    title: "Lockr ",
   },
   menu = [
     { title: "Home", url: "#" },
