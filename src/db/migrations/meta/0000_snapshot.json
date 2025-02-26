@@ -1,5 +1,5 @@
 {
-  "id": "2c362a70-9f92-48a8-a7c0-a5cb467f3437",
+  "id": "f8199bfa-2c86-4441-a56a-cacccc0aead6",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -111,7 +111,7 @@
         },
         "verify_code": {
           "name": "verify_code",
-          "type": "varchar",
+          "type": "varchar(6)",
           "primaryKey": false,
           "notNull": true
         },

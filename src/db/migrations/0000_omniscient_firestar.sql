@@ -14,7 +14,7 @@ CREATE TABLE "users" (
 	"email" varchar(50) NOT NULL,
 	"password" varchar(256) NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"verify_code" varchar NOT NULL,
+	"verify_code" varchar(6) NOT NULL,
 	"verify_code_expires" timestamp NOT NULL,
 	"is_verified" boolean DEFAULT false NOT NULL,
 	CONSTRAINT "users_username_unique" UNIQUE("username"),
