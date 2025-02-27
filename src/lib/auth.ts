@@ -7,6 +7,14 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24 * 7,
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -32,9 +40,10 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-      sendVerificationEmail: async ({ user, token }) => {
-          const verificationUrl = `${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${token}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`;
-        
-    }
+    sendVerificationEmail: async ({ user, token }) => {
+      await sendVerificationEmail(user.email, user.name, token);
+    },
   },
 } satisfies BetterAuthOptions);
+
+export type Session = typeof auth.$Infer.Session;

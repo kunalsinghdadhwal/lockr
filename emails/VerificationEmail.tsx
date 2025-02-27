@@ -52,7 +52,7 @@ export default function VerificationEmail({ username, otp }: VerificationEmailPr
         </Row>
         <Row>
           <Button
-            href={`http://localhost:3000/verify/${username}`}
+            href={`${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${otp}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`}
             style={{ color: '#61dafb' }}
           >
             Verify here
