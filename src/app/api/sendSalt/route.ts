@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { users } from "@/db/schema";
+import { user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
@@ -12,16 +12,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const user = await db
-      .select({ iv: users.iv })
-      .from(users)
-      .where(eq(users.email, email));
+    const userSalt = await db
+      .select({ iv: user.iv })
+      .from(user)
+      .where(eq(user.email, email));
 
-    if (user.length === 0) {
+    if (userSalt.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ salt: user[0].iv });
+    return NextResponse.json({ salt: userSalt[0].iv });
   } catch (error) {
     return NextResponse.json(
       { error: "Internal Server Error" },

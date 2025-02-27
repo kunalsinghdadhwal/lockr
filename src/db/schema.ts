@@ -1,45 +1,69 @@
 import {
-  integer,
-  timestamp,
   pgTable,
   text,
+  integer,
+  timestamp,
   boolean,
-  uuid,
-  varchar,
-  serial,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  email: varchar("email", { length: 50 }).unique().notNull(),
-  password: varchar("password", { length: 256 }).notNull(),
-  iv: varchar("iv", { length: 32 }).notNull(),
-  created_at: timestamp("created_at").notNull().defaultNow(),
-  verifyCode: varchar("verify_code", { length: 6 }).notNull(),
-  verifyCodeExpires: timestamp("verify_code_expires").notNull(),
-  isVerified: boolean("is_verified").notNull().default(false),
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull(),
+  image: text("image"),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+  iv: text("iv").notNull(),
+});
+
+export const session = pgTable("session", {
+  id: text("id").primaryKey(),
+  expiresAt: timestamp("expires_at").notNull(),
+  token: text("token").notNull().unique(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+});
+
+export const account = pgTable("account", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+  scope: text("scope"),
+  password: text("password"),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const verification = pgTable("verification", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at"),
+  updatedAt: timestamp("updated_at"),
 });
 
 export const passwords = pgTable("passwords", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id, { onDelete: "cascade" })
-    .notNull(),
-  accountName: varchar("account_name", { length: 50 }).notNull(),
-  username: varchar("username", { length: 50 }).notNull(),
-  encrypted_password: varchar("encrypted_password").notNull(),
-  iv: varchar("iv").notNull(),
-  created_at: timestamp("created_at").notNull().defaultNow(),
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  encryptedPassword: text("encrypted_password").notNull(),
+  iv: text("iv").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
 });
-
-export const userRelations = relations(users, ({ many }) => ({
-  passwords: many(passwords),
-}));
-
-export const passwordRelations = relations(passwords, ({ one }) => ({
-  user: one(users, {
-    fields: [passwords.userId],
-    references: [users.id],
-  }),
-}));
