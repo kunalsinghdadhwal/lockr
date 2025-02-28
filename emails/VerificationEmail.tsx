@@ -45,10 +45,17 @@ export default function VerificationEmail({
             code to complete your registration:
           </Text>
         </Row>
-        <Row>
+        <Row style={{ textAlign: "center", margin: "20px 0" }}>
           <Button
             href={`${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${otp}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`}
-            style={{ color: "#61dafb" }}
+            style={{
+              backgroundColor: "#61dafb",
+              color: "#ffffff",
+              padding: "10px 20px",
+              borderRadius: "5px",
+              textDecoration: "none",
+              display: "inline-block",
+            }}
           >
             Verify here
           </Button>
