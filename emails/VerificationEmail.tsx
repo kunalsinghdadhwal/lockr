@@ -8,14 +8,17 @@ import {
   Section,
   Text,
   Button,
-} from '@react-email/components';
+} from "@react-email/components";
 
 interface VerificationEmailProps {
   username: string;
   otp: string;
 }
 
-export default function VerificationEmail({ username, otp }: VerificationEmailProps) {
+export default function VerificationEmail({
+  username,
+  otp,
+}: VerificationEmailProps) {
   return (
     <Html lang="en" dir="ltr">
       <Head>
@@ -24,8 +27,8 @@ export default function VerificationEmail({ username, otp }: VerificationEmailPr
           fontFamily="Roboto"
           fallbackFontFamily="Verdana"
           webFont={{
-            url: 'https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2',
-            format: 'woff2',
+            url: "https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2",
+            format: "woff2",
           }}
           fontWeight={400}
           fontStyle="normal"
@@ -43,20 +46,17 @@ export default function VerificationEmail({ username, otp }: VerificationEmailPr
           </Text>
         </Row>
         <Row>
-          <Text>{otp}</Text> 
+          <Button
+            href={`${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${otp}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`}
+            style={{ color: "#61dafb" }}
+          >
+            Verify here
+          </Button>
         </Row>
         <Row>
           <Text>
             If you did not request this code, please ignore this email.
           </Text>
-        </Row>
-        <Row>
-          <Button
-            href={`${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${otp}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`}
-            style={{ color: '#61dafb' }}
-          >
-            Verify here
-          </Button>
         </Row>
       </Section>
     </Html>

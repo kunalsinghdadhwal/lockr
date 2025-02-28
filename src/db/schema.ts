@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  text,
-  integer,
-  timestamp,
-  boolean,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -62,8 +56,18 @@ export const passwords = pgTable("passwords", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  encryptedPassword: text("encrypted_password").notNull(),
+  password: text("password").notNull(),
   iv: text("iv").notNull(),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const salts = pgTable("salts", {
+  id: text("id").primaryKey(),
+  email: text("email")
+    .notNull()
+    .unique()
+    .references(() => user.email, { onDelete: "cascade" }),
+  iv: text("iv").notNull(),
+  createdAt: timestamp("created_at").notNull(),
 });

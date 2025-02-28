@@ -2,10 +2,15 @@ import { db } from "@/db/drizzle";
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
 import { betterAuth, BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { openAPI } from "better-auth/plugins";
+import * as schema from "@/db/schema";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
+    schema: {
+      ...schema,
+    },
   }),
   session: {
     expiresIn: 60 * 60 * 24 * 7,
@@ -25,6 +30,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
     },
   },
+  plugins: [openAPI()],
   user: {
     additionalFields: {
       iv: {

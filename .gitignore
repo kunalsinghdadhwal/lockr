@@ -17,6 +17,7 @@ pnpm-lock.yaml
 /.next/
 /out/
 postgres/
+src/db/migrations/
 
 # production
 /build
