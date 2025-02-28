@@ -1,5 +1,4 @@
 "use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
@@ -21,9 +20,7 @@ import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import crypto from "crypto";
-import { user } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { deriveKey } from "@/helpers/encryption";
 
 export default function SignUp() {
   const [pending, setPending] = useState(false);
@@ -39,36 +36,6 @@ export default function SignUp() {
       salt: ""
     },
   });
-  async function deriveKey(
-    email: string,
-    password: string,
-    iterations = 10000,
-    keyLength = 32,
-    digest = "sha256"
-  ) {
-    return new Promise<{ key: string; salt: string }>((resolve, reject) => {
-      const input = `${email}:${password}`;
-      const salt = crypto.randomBytes(16).toString("base64");
-
-      crypto.pbkdf2(
-        input,
-        salt,
-        iterations,
-        keyLength,
-        digest,
-        (err: Error | null, derivedKey: Buffer) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve({
-              key: derivedKey.toString("base64"),
-              salt: salt,
-            });
-          }
-        }
-      );
-    });
-  }
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
     const storedCredentials: { key: string; salt: string } | null = await deriveKey(values.email, values.password);
@@ -84,11 +51,12 @@ export default function SignUp() {
           setPending(true);
         },
         onSuccess: () => {
-          toast({
-            title: "Account created",
-            description:
-              "Your account has been created. Check your email for a verification link.",
-          });
+          console.log("wowowoow");
+          // toast({
+          //   title: "Account created",
+          //   description:
+          //     "Your account has been created. Check your email for a verification link.",
+          // });
         },
         onError: (ctx) => {
           console.log("error", ctx);

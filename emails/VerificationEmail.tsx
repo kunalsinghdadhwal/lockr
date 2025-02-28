@@ -49,7 +49,7 @@ export default function VerificationEmail({
           <Button
             href={`${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${otp}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`}
             style={{
-              backgroundColor: "#61dafb",
+              backgroundColor: "#000000",
               color: "#ffffff",
               padding: "10px 20px",
               borderRadius: "5px",

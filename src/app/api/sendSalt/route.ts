@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { salts } from "@/db/schema";
+import { user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email");
+    const { email } = await req.json();
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     const userSalt = await db
-      .select({ iv: salts.iv })
-      .from(salts)
-      .where(eq(salts.email, email));
+      .select({ iv: user.iv })
+      .from(user)
+      .where(eq(user.email, email));
 
     if (userSalt.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
