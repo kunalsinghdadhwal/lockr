@@ -5,6 +5,11 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { openAPI } from "better-auth/plugins";
 import * as schema from "@/db/schema";
 
+function extractResetToken(url: string): string | null {
+  const match = url.match(/reset-password\/([^\/\?#]+)/);
+  return match ? match[1] : null;
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -42,12 +47,34 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      const token = extractResetToken(url);
+      await sendVerificationEmail(
+        user.email,
+        user.name,
+        token!,
+        "Sigma Boyz Reset Password",
+        "Click the link below to reset your password",
+        "Reset Password",
+        "/reset-password",
+        false
+      );
+    },
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, token }) => {
-      await sendVerificationEmail(user.email, user.name, token);
+      await sendVerificationEmail(
+        user.email,
+        user.name,
+        token,
+        "Sigma Boyz verification Code",
+        "Thank you for registering. Please use the following verification code to complete your registration",
+        "Verify Here",
+        process.env.EMAIL_VERIFICATION_CALLBACK_URL!,
+        true
+      );
     },
   },
 } satisfies BetterAuthOptions);

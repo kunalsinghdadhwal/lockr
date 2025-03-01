@@ -45,7 +45,7 @@ export default function SignIn() {
   const handleCredentialsSignIn = async (
     values: z.infer<typeof signInSchema>
   ) => {
-      const result = await fetchSalt(values.email);
+    const result = await fetchSalt(values.email);
     const password = await deriveKey(
       values.email,
       values.password,

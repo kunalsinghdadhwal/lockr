@@ -13,11 +13,19 @@ import {
 interface VerificationEmailProps {
   username: string;
   otp: string;
+  text: string;
+  buttontext: string;
+  callback_url: string;
+  verify: boolean
 }
 
 export default function VerificationEmail({
   username,
   otp,
+  text,
+  buttontext,
+  callback_url,
+  verify
 }: VerificationEmailProps) {
   return (
     <Html lang="en" dir="ltr">
@@ -41,29 +49,39 @@ export default function VerificationEmail({
         </Row>
         <Row>
           <Text>
-            Thank you for registering. Please use the following verification
-            code to complete your registration:
+            {text}
           </Text>
         </Row>
         <Row style={{ textAlign: "center", margin: "20px 0" }}>
-          <Button
-            href={`${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${otp}&callbackURL=${process.env.EMAIL_VERIFICATION_CALLBACK_URL}`}
-            style={{
-              backgroundColor: "#000000",
-              color: "#ffffff",
-              padding: "10px 20px",
-              borderRadius: "5px",
-              textDecoration: "none",
-              display: "inline-block",
-            }}
-          >
-            Verify here
-          </Button>
-        </Row>
-        <Row>
-          <Text>
-            If you did not request this code, please ignore this email.
-          </Text>
+          {verify ? (
+            <Button
+              href={`${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${otp}&callbackURL=${callback_url}`}
+              style={{
+                backgroundColor: "#000000",
+                color: "#ffffff",
+                padding: "10px 20px",
+                borderRadius: "5px",
+                textDecoration: "none",
+                display: "inline-block",
+              }}
+            >
+              {buttontext}
+            </Button>
+          ) : (
+            <Button
+              href={`${process.env.BETTER_AUTH_URL}/api/auth/reset-password/${otp}?callbackURL=${callback_url}`}
+              style={{
+                backgroundColor: "#000000",
+                color: "#ffffff",
+                padding: "10px 20px",
+                borderRadius: "5px",
+                textDecoration: "none",
+                display: "inline-block",
+              }}
+            >
+              {buttontext}
+            </Button>
+          )}
         </Row>
       </Section>
     </Html>

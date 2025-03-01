@@ -39,6 +39,7 @@ export const forgotPasswordSchema = object({
 });
 
 export const resetPasswordSchema = object({
+  email: getEmailSchema(),
   password: getPasswordSchema("password"),
   confirmPassword: getPasswordSchema("confirmPassword"),
 }).refine((data) => data.password === data.confirmPassword, {
