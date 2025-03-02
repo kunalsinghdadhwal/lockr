@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth";
+import type { Session } from "@/lib/auth";
 
 const authRoutes = ["/sign-in", "/sign-up"];
 const passwordRoutes = ["/forgot-password", "/reset-password"];
 const dashboardRoutes = ["/dashboard"];
+const adminRoutes = ["/admin"];
 
 export default async function authMiddleware(req: NextRequest) {
   const pathName = req.nextUrl.pathname;
   const isAuthRoute = authRoutes.includes(pathName);
   const isPasswordRoute = passwordRoutes.includes(pathName);
   const isDashboardRoute = dashboardRoutes.includes(pathName);
-  const cookies = getSessionCookie(req);
+  const isAdminRoute = adminRoutes.includes(pathName);
+  let cookies = getSessionCookie(req) as Session | null;
   if (!cookies) {
     if (isDashboardRoute) {
       return NextResponse.redirect(new URL("/sign-in", req.url));
@@ -26,6 +29,12 @@ export default async function authMiddleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
+  if (isAdminRoute && cookies.user.role !== "admin") {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+  if (cookies && isDashboardRoute) {
+    return NextResponse.next();
+  }
   return NextResponse.next();
 }
 

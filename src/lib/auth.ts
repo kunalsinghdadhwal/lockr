@@ -2,7 +2,7 @@ import { db } from "@/db/drizzle";
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
 import { betterAuth, BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { openAPI } from "better-auth/plugins";
+import { admin, openAPI } from "better-auth/plugins";
 import * as schema from "@/db/schema";
 
 function extractResetToken(url: string): string | null {
@@ -35,7 +35,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
     },
   },
-  plugins: [openAPI()],
+  plugins: [openAPI(), admin()],
   user: {
     additionalFields: {
       iv: {

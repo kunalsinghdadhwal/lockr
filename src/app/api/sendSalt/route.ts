@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ salt: userSalt[0].iv });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
