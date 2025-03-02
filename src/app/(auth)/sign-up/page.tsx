@@ -51,12 +51,11 @@ export default function SignUp() {
           setPending(true);
         },
         onSuccess: () => {
-          console.log("wowowoow");
-          // toast({
-          //   title: "Account created",
-          //   description:
-          //     "Your account has been created. Check your email for a verification link.",
-          // });
+          toast({
+            title: "Account created",
+            description:
+              "Your account has been created. Check your email for a verification link.",
+          });
         },
         onError: (ctx) => {
           console.log("error", ctx);
