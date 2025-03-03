@@ -22,7 +22,6 @@ export default async function authMiddleware(req: NextRequest) {
       },
     }
   );
-  console.log("cookies", session);
   if (!session) {
     if (isDashboardRoute) {
       return NextResponse.redirect(new URL("/sign-in", req.url));
