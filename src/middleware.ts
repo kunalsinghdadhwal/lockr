@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionCookie } from "better-auth";
 import type { Session } from "@/lib/auth";
+import { betterFetch } from "@better-fetch/fetch";
 
 const authRoutes = ["/sign-in", "/sign-up"];
 const passwordRoutes = ["/forgot-password", "/reset-password"];
@@ -13,9 +13,17 @@ export default async function authMiddleware(req: NextRequest) {
   const isPasswordRoute = passwordRoutes.includes(pathName);
   const isDashboardRoute = dashboardRoutes.includes(pathName);
   const isAdminRoute = adminRoutes.includes(pathName);
-  let cookies = getSessionCookie(req) as Session | null;
-  console.log("cookies", cookies);
-  if (!cookies) {
+  const { data: session } = await betterFetch<Session>(
+    "/api/auth/get-session",
+    {
+      baseURL: process.env.BETTER_AUTH_URL,
+      headers: {
+        cookie: req.headers.get("cookie") || "",
+      },
+    }
+  );
+  console.log("cookies", session);
+  if (!session) {
     if (isDashboardRoute) {
       return NextResponse.redirect(new URL("/sign-in", req.url));
     }
@@ -26,14 +34,14 @@ export default async function authMiddleware(req: NextRequest) {
 
     return NextResponse.next();
   }
-  if (cookies && (isAuthRoute || isPasswordRoute)) {
+  if (session && (isAuthRoute || isPasswordRoute)) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  if (isAdminRoute && cookies.user.role !== "admin") {
+  if (isAdminRoute && session.user.role !== "admin") {
     return NextResponse.redirect(new URL("/", req.url));
   }
-  if (cookies && isDashboardRoute) {
+  if (session && isDashboardRoute) {
     return NextResponse.next();
   }
   return NextResponse.next();
