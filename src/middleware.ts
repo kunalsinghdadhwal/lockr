@@ -14,6 +14,7 @@ export default async function authMiddleware(req: NextRequest) {
   const isDashboardRoute = dashboardRoutes.includes(pathName);
   const isAdminRoute = adminRoutes.includes(pathName);
   let cookies = getSessionCookie(req) as Session | null;
+  console.log("cookies", cookies);
   if (!cookies) {
     if (isDashboardRoute) {
       return NextResponse.redirect(new URL("/sign-in", req.url));
@@ -39,5 +40,5 @@ export default async function authMiddleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|.*\\.png$|tools/.*).*)"],
 };

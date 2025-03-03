@@ -22,7 +22,7 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 
-import { ErrorContext } from "@better-fetch/fetch";
+import type { ErrorContext } from "@better-fetch/fetch";
 import { GithubIcon } from "lucide-react";
 import { deriveKey } from "@/helpers/encryption";
 import { fetchSalt } from "@/hooks/fetchSalt";
@@ -65,7 +65,6 @@ export default function SignIn() {
           router.refresh();
         },
         onError: (ctx: ErrorContext) => {
-          console.log(ctx);
           toast({
             title: "Something went wrong",
             description: ctx.error.message ?? "Something went wrong.",
@@ -81,22 +80,7 @@ export default function SignIn() {
     await authClient.signIn.social(
       {
         provider: "github",
-      },
-      {
-        onRequest: () => {
-          setPendingGithub(true);
-        },
-        onSuccess: async () => {
-          router.push("/");
-          router.refresh();
-        },
-        onError: (ctx: ErrorContext) => {
-          toast({
-            title: "Something went wrong",
-            description: ctx.error.message ?? "Something went wrong.",
-            variant: "destructive",
-          });
-        },
+        callbackURL: "/dashboard"
       }
     );
     setPendingGithub(false);
@@ -106,23 +90,8 @@ export default function SignIn() {
     await authClient.signIn.social(
       {
         provider: "google",
+        callbackURL: "/dashboard"
       },
-      {
-        onRequest: () => {
-          setPendingGoogle(true);
-        },
-        onSuccess: async () => {
-          router.push("/");
-          router.refresh();
-        },
-        onError: (ctx: ErrorContext) => {
-          toast({
-            title: "Something went wrong",
-            description: ctx.error.message ?? "Something went wrong.",
-            variant: "destructive",
-          });
-        },
-      }
     );
     setPendingGoogle(false);
   };
