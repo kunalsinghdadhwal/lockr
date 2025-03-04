@@ -112,7 +112,7 @@ export default function EmailVerifiedPage() {
                       className="relative overflow-hidden group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0"
                     >
                       <Link
-                        href="/login"
+                        href="/sign-in"
                         className="flex items-center justify-center"
                       >
                         Continue to Login

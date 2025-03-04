@@ -24,8 +24,6 @@ import { useToast } from "@/hooks/use-toast";
 
 import type { ErrorContext } from "@better-fetch/fetch";
 import { GithubIcon } from "lucide-react";
-import { deriveKey } from "@/helpers/encryption";
-import { fetchSalt } from "@/hooks/fetchSalt";
 
 export default function SignIn() {
   const router = useRouter();
@@ -45,23 +43,17 @@ export default function SignIn() {
   const handleCredentialsSignIn = async (
     values: z.infer<typeof signInSchema>
   ) => {
-    const result = await fetchSalt(values.email);
-    const password = await deriveKey(
-      values.email,
-      values.password,
-      result as string
-    );
     await authClient.signIn.email(
       {
         email: values.email,
-        password: password.key,
+        password: values.password,
       },
       {
         onRequest: () => {
           setPendingCredentials(true);
         },
         onSuccess: async () => {
-          router.push("/");
+          router.push("/dashboard");
           router.refresh();
         },
         onError: (ctx: ErrorContext) => {

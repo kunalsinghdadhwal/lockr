@@ -1,14 +1,9 @@
 import { db } from "@/db/drizzle";
-import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
+import { sendEmail } from "@/helpers/sendEmail";
 import { betterAuth, BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, openAPI } from "better-auth/plugins";
 import * as schema from "@/db/schema";
-
-function extractResetToken(url: string): string | null {
-  const match = url.match(/reset-password\/([^\/\?#]+)/);
-  return match ? match[1] : null;
-}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -37,27 +32,20 @@ export const auth = betterAuth({
   },
   plugins: [openAPI(), admin()],
   user: {
-    additionalFields: {
-      iv: {
-        type: "string",
-        required: true,
-      },
+    deleteUser: {
+      enabled: true,
     },
   },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    sendResetPassword: async ({ user, url }) => {
-      const token = extractResetToken(url);
-      await sendVerificationEmail(
+    sendResetPassword: async ({ user, token }) => {
+      await sendEmail(
         user.email,
         user.name,
-        token!,
-        "Sigma Boyz Reset Password",
-        "Click the link below to reset your password",
-        "Reset Password",
-        "/reset-password",
-        false
+        token,
+        "Sigma Boyz Reset Password Link",
+        "reset"
       );
     },
   },
@@ -65,15 +53,12 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, token }) => {
-      await sendVerificationEmail(
+      await sendEmail(
         user.email,
         user.name,
         token,
-        "Sigma Boyz verification Code",
-        "Thank you for registering. Please use the following verification code to complete your registration",
-        "Verify Here",
-        process.env.EMAIL_VERIFICATION_CALLBACK_URL!,
-        true
+        "Sigma Boyz Verification Code",
+        "verify"
       );
     },
   },

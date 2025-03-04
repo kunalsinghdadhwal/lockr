@@ -20,8 +20,6 @@ import LoadingButton from "@/components/loading-button";
 import { authClient } from "@/lib/auth-client";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { fetchSalt } from "@/hooks/fetchSalt";
-import { deriveKey } from "@/helpers/encryption";
 
 function ResetPasswordContent() {
     const router = useRouter();
@@ -40,19 +38,8 @@ function ResetPasswordContent() {
 
     const onSubmit = async (data: z.infer<typeof resetPasswordSchema>) => {
         setIsPending(true);
-        const result = await fetchSalt(data.email);
-        if (result === null) {
-            toast({
-                title: "Error",
-                description: "Failed to fetch salt",
-                variant: "destructive",
-            });
-            setIsPending(false);
-            return;
-        }
-        const password = await deriveKey(data.email, data.password, result);
         const { error } = await authClient.resetPassword({
-            newPassword: password.key,
+            newPassword: data.password,
         });
         if (error) {
             toast({
@@ -102,23 +89,6 @@ function ResetPasswordContent() {
                 <CardContent>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="text"
-                                                placeholder="Enter your email"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
                             <FormField
                                 control={form.control}
                                 name="password"

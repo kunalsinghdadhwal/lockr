@@ -12,7 +12,6 @@ export const user = pgTable("user", {
   banned: boolean("banned"),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
-  iv: text("iv").notNull(),
 });
 
 export const session = pgTable("session", {
@@ -63,6 +62,16 @@ export const passwords = pgTable("passwords", {
     .references(() => user.id, { onDelete: "cascade" }),
   password: text("password").notNull(),
   iv: text("iv").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const masterPasswords = pgTable("masterPasswords", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  password: text("password").notNull(),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });

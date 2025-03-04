@@ -1,17 +1,6 @@
 import Link from "next/link"
-import { useTheme } from "next-themes"
-import { useState, useEffect } from "react"
-import { Switch } from "@/components/ui/switch"
-import { Moon, Sun } from "lucide-react"
 
 export default function Footer() {
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   return (
     <footer className="text-white py-12">
       <div className="container mx-auto px-4">
@@ -82,15 +71,6 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <Sun className="h-4 w-4" />
-            <Switch 
-              checked={mounted && theme === "dark"}
-              onCheckedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
-              id="theme-toggle"
-            />
-            <Moon className="h-4 w-4" />
-          </div>
           <p>&copy; {new Date().getFullYear()} Quinx. All rights reserved.</p>
         </div>
       </div>

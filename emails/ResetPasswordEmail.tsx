@@ -10,21 +10,19 @@ import {
   Button,
 } from "@react-email/components";
 
-interface VerificationEmailProps {
+interface ResetPasswordProps {
   username: string;
   token: string;
-  callback_url: string;
 }
 
-export default function VerificationEmail({
+export default function ResetPasswordEmail({
   username,
   token,
-  callback_url,
-}: VerificationEmailProps) {
+}: ResetPasswordProps) {
   return (
     <Html lang="en" dir="ltr">
       <Head>
-        <title>Verification Code</title>
+        <title>Reset Password Link</title>
         <Font
           fontFamily="Roboto"
           fallbackFontFamily="Verdana"
@@ -36,17 +34,17 @@ export default function VerificationEmail({
           fontStyle="normal"
         />
       </Head>
-      <Preview>Thank you! Verify your email address to complete your registration</Preview>
+      <Preview>Reset Password to get back on</Preview>
       <Section>
         <Row>
           <Heading as="h2">Hello {username},</Heading>
         </Row>
         <Row>
-          <Text>Thank you for registering. Please use the following verification code to complete your registration</Text>
+          <Text>Click the below link to verify your identity and Reset your password</Text>
         </Row>
         <Row style={{ textAlign: "center", margin: "20px 0" }}>
           <Button
-            href={`${process.env.BETTER_AUTH_URL}/api/auth/verify-email?token=${token}&callbackURL=${callback_url}`}
+            href={`${process.env.BETTER_AUTH_URL}/api/auth/reset-password?token=${token}&callbackURL=/reset-password`}
             style={{
               backgroundColor: "#000000",
               color: "#ffffff",
@@ -56,7 +54,7 @@ export default function VerificationEmail({
               display: "inline-block",
             }}
           >
-           Verify Here 
+           Reset Password
           </Button>
         </Row>
       </Section>

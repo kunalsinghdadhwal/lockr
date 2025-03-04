@@ -16,14 +16,11 @@ const getNameSchema = () =>
     .min(1, "Name is required")
     .max(50, "Name must be less than 50 characters");
 
-const getSaltSchema = () => string({ required_error: "Salt is required" });
-
 export const signUpSchema = object({
   name: getNameSchema(),
   email: getEmailSchema(),
   password: getPasswordSchema("password"),
   confirmPassword: getPasswordSchema("confirmPassword"),
-  salt: getSaltSchema(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -39,7 +36,6 @@ export const forgotPasswordSchema = object({
 });
 
 export const resetPasswordSchema = object({
-  email: getEmailSchema(),
   password: getPasswordSchema("password"),
   confirmPassword: getPasswordSchema("confirmPassword"),
 }).refine((data) => data.password === data.confirmPassword, {

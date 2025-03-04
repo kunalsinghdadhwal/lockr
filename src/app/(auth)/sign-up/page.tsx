@@ -20,7 +20,6 @@ import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deriveKey } from "@/helpers/encryption";
 
 export default function SignUp() {
   const [pending, setPending] = useState(false);
@@ -33,18 +32,15 @@ export default function SignUp() {
       email: "",
       password: "",
       confirmPassword: "",
-      salt: ""
     },
   });
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
-    const storedCredentials: { key: string; salt: string } | null = await deriveKey(values.email, values.password);
     await authClient.signUp.email(
       {
         email: values.email,
-        password: storedCredentials.key,
+        password: values.password,
         name: values.name,
-        iv: storedCredentials.salt
       },
       {
         onRequest: () => {
@@ -93,7 +89,7 @@ export default function SignUp() {
                       <FormControl>
                         <Input
                           type={
-                            field.includes("password")
+                            field.includes("password") || field.includes("confirmPassword")
                               ? "password"
                               : field === "email"
                                 ? "email"
