@@ -2,14 +2,12 @@ import Link from "next/link"
 import { useTheme } from "next-themes"
 import { useState, useEffect } from "react"
 import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 import { Moon, Sun } from "lucide-react"
 
 export default function Footer() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
-  // Avoid hydration mismatch by only rendering the toggle after mounting
   useEffect(() => {
     setMounted(true)
   }, [])
