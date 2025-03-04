@@ -68,3 +68,4 @@ export const auth = betterAuth({
 } satisfies BetterAuthOptions);
 
 export type Session = typeof auth.$Infer.Session;
+export const ctx = await auth.$context;
