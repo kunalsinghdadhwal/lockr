@@ -25,9 +25,6 @@ export async function POST(req: NextRequest) {
       .select({ password: passwords.password })
       .from(passwords)
       .where(eq(passwords.email, email));
-   
-    
-    
   } catch {
     return NextResponse.json(
       { error: "Internal Server Error" },
