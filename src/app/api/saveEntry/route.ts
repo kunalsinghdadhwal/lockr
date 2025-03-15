@@ -5,6 +5,4 @@ export async function POST(req: NextRequest) {
   if (!appName || !username || !password || !url || !categroy) {
     return new Response("Missing required fields", { status: 400 });
   }
-
-
 }

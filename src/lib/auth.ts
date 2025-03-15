@@ -64,7 +64,7 @@ export const auth = betterAuth({
   },
   advanced: {
     cookiePrefix: "sigma-boyz",
-    useSecureCookies: true
+    useSecureCookies: true,
   },
 } satisfies BetterAuthOptions);
 

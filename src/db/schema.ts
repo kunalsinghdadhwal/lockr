@@ -1,11 +1,4 @@
-import {
-  pgTable,
-  text,
-  integer,
-  serial,
-  timestamp,
-  boolean,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -63,12 +56,15 @@ export const verification = pgTable("verification", {
 });
 
 export const passwords = pgTable("passwords", {
-  email: text("email")
+  userId: text("user_id")
     .notNull()
-    .references(() => user.email, { onDelete: "cascade" }),
+    .references(() => user.id, { onDelete: "cascade" }),
+  username: text("username").notNull(),
   password: text("password").notNull(),
-  createdAt: timestamp("created_at").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
+  notes: text("notes"),
+  serviceName: text("service_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const masterPasswords = pgTable("masterPasswords", {
