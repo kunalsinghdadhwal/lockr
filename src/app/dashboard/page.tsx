@@ -1,6 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import { CardDescription } from "@/components/ui/card";
+import * as React from "react";
 import {
   BadgeCheck,
   ChevronDown,
@@ -16,14 +17,29 @@ import {
   Settings,
   Shield,
   User,
-} from "lucide-react"
-import { useTheme } from "next-themes"
+  Check,
+  AlertCircle,
+} from "lucide-react";
+import { useTheme } from "next-themes";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +48,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,11 +57,28 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+} from "@/components/ui/dropdown-menu";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sidebar,
   SidebarContent,
@@ -60,76 +93,25 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+} from "@/components/ui/sidebar";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { deriveKey } from "@/helpers/encryption";
+import { authClient } from "@/lib/auth-client";
+import { useEffect } from "react";
+import { decryptAES256GCM } from "@/helpers/aesEncryption";
 
-// Form schema
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  category: z.string().min(1, "Category is required"),
-})
-
-// Sample data
-const passwordItems = [
-  {
-    id: 1,
-    name: "Google",
-    username: "user@example.com",
-    strength: 85,
-    lastUpdated: "2 days ago",
-    logo: "/placeholder.svg?height=40&width=40",
-    category: "Social",
-  },
-  {
-    id: 2,
-    name: "GitHub",
-    username: "devuser",
-    strength: 95,
-    lastUpdated: "1 week ago",
-    logo: "/placeholder.svg?height=40&width=40",
-    category: "Development",
-  },
-  {
-    id: 3,
-    name: "Netflix",
-    username: "user@example.com",
-    strength: 70,
-    lastUpdated: "1 month ago",
-    logo: "/placeholder.svg?height=40&width=40",
-    category: "Entertainment",
-  },
-  {
-    id: 4,
-    name: "Amazon",
-    username: "user@example.com",
-    strength: 80,
-    lastUpdated: "2 weeks ago",
-    logo: "/placeholder.svg?height=40&width=40",
-    category: "Shopping",
-  },
-  {
-    id: 5,
-    name: "Dropbox",
-    username: "user@example.com",
-    strength: 90,
-    lastUpdated: "3 days ago",
-    logo: "/placeholder.svg?height=40&width=40",
-    category: "Storage",
-  },
-  {
-    id: 6,
-    name: "Twitter",
-    username: "user@example.com",
-    strength: 75,
-    lastUpdated: "5 days ago",
-    logo: "/placeholder.svg?height=40&width=40",
-    category: "Social",
-  },
-]
+type PasswordItem = {
+  userId: string;
+  username: string;
+  password: string;
+  notes?: string | null; 
+  serviceName: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 const categories = [
   { value: "all", label: "All Passwords" },
@@ -138,69 +120,192 @@ const categories = [
   { value: "entertainment", label: "Entertainment" },
   { value: "shopping", label: "Shopping" },
   { value: "storage", label: "Storage" },
-]
+];
+
+// Form schema
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  category: z.string().min(1, "Category is required"),
+});
+
+// Master password schema
+const masterPasswordSchema = z.object({
+  password: z.string(),
+});
+
+const fetchPasswords = async (userId: string) => {
+  try {
+    const response = await fetch("/api/passwords", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user_id: userId }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to fetch passwords");
+    }
+
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Error fetching passwords:", error);
+    return [];
+  }
+};
+
+
+function MasterPasswordAuth({
+  onAuthenticate,
+}: {
+  onAuthenticate: (password: string) => void;
+}) {
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [authError, setAuthError] = React.useState<string | null>(null);
+
+  const form = useForm<z.infer<typeof masterPasswordSchema>>({
+    resolver: zodResolver(masterPasswordSchema),
+    defaultValues: {
+      password: "",
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof masterPasswordSchema>) => {
+    if (!values.password) {
+      setAuthError("Password is required");
+      return;
+    }
+    const session = await authClient.getSession();
+    if (!session) {
+      setAuthError("Session not found");
+      return;
+    }
+    const key = await deriveKey(
+      session.data?.user.email as string,
+      session.data?.session.userId as string,
+      values.password,
+    )
+    localStorage.setItem("masterKey", key.key);
+    setAuthError(null);
+    onAuthenticate(values.password);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-6 w-6 text-primary" />
+            <CardTitle>VaultKey</CardTitle>
+          </div>
+          <CardDescription>
+            Enter your master password to unlock your password vault
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Master Password</FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your master password"
+                          className="pr-10"
+                          {...field}
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">
+                          Toggle password visibility
+                        </span>
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full">
+                Unlock Vault
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter>
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Authentication Error</AlertTitle>
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
 
 export default function PasswordDashboard() {
-  const [selectedCategory, setSelectedCategory] = React.useState(categories[0])
-  const [showPassword, setShowPassword] = React.useState<Record<number, boolean>>({})
-  const [passwordItems, setPasswordItems] = React.useState([
-    {
-      id: 1,
-      name: "Google",
-      username: "user@example.com",
-      strength: 85,
-      lastUpdated: "2 days ago",
-      logo: "/placeholder.svg?height=40&width=40",
-      category: "Social",
-    },
-    {
-      id: 2,
-      name: "GitHub",
-      username: "devuser",
-      strength: 95,
-      lastUpdated: "1 week ago",
-      logo: "/placeholder.svg?height=40&width=40",
-      category: "Development",
-    },
-    {
-      id: 3,
-      name: "Netflix",
-      username: "user@example.com",
-      strength: 70,
-      lastUpdated: "1 month ago",
-      logo: "/placeholder.svg?height=40&width=40",
-      category: "Entertainment",
-    },
-    {
-      id: 4,
-      name: "Amazon",
-      username: "user@example.com",
-      strength: 80,
-      lastUpdated: "2 weeks ago",
-      logo: "/placeholder.svg?height=40&width=40",
-      category: "Shopping",
-    },
-    {
-      id: 5,
-      name: "Dropbox",
-      username: "user@example.com",
-      strength: 90,
-      lastUpdated: "3 days ago",
-      logo: "/placeholder.svg?height=40&width=40",
-      category: "Storage",
-    },
-    {
-      id: 6,
-      name: "Twitter",
-      username: "user@example.com",
-      strength: 75,
-      lastUpdated: "5 days ago",
-      logo: "/placeholder.svg?height=40&width=40",
-      category: "Social",
-    },
-  ])
-  const { setTheme } = useTheme()
-  const [open, setOpen] = React.useState(false)
+  const [selectedCategory, setSelectedCategory] = React.useState(categories[0]);
+  const [showPassword, setShowPassword] = React.useState<
+    Record<number, boolean>
+  >({});
+  const [copiedItems, setCopiedItems] = React.useState<Record<string, boolean>>(
+    {}
+  );
+  const [passwordItems, setPasswordItems] = React.useState<PasswordItem[]>([]);
+  const [encryptedData, setEncryptedData] = React.useState<PasswordItem[]>([]);
+  useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const session = await authClient.getSession();
+      if (!session) return;
+      const encryptionKey = localStorage.getItem("masterKey") as string;
+      const userId = session.data?.session.userId as string;
+      const passwords = await fetchPasswords(userId);
+      setEncryptedData(passwords);
+      const decryptedPasswords = await Promise.all(
+        passwords.map(async (entry) => ({
+          ...entry,
+          password: await decryptAES256GCM(entry.password, Buffer.from(encryptionKey, "base64"), entry.iv),
+        }))
+      );
+      console.log(passwords);
+      setPasswordItems(decryptedPasswords);
+    } catch (error) {
+      console.error("Error fetching passwords:", error);
+    }
+  };
+
+  fetchData(); 
+}, []);
+
+  const { setTheme } = useTheme();
+  const [open, setOpen] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [masterPassword, setMasterPassword] = React.useState<string | null>(
+    null
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -210,53 +315,91 @@ export default function PasswordDashboard() {
       password: "",
       category: "",
     },
-  })
+  });
+
+  // Handle authentication
+  const handleAuthentication = (password: string) => {
+    setMasterPassword(password);
+    setIsAuthenticated(true);
+
+    const encrypted = encryptData(passwordItems, password);
+    setEncryptedData(encrypted);
+  };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    if (!masterPassword) return;
+
     // Calculate password strength (simple example)
-    const strength = Math.floor(Math.random() * (95 - 70 + 1)) + 70
+    const strength = Math.floor(Math.random() * (95 - 70 + 1)) + 70;
 
     // Create new password item
     const newPassword = {
       id: passwordItems.length + 1,
       name: values.name,
       username: values.username,
+      password: values.password,
       strength,
       lastUpdated: "Just now",
       logo: "/placeholder.svg?height=40&width=40",
       category: values.category,
-    }
+    };
 
     // Add to passwords list
-    setPasswordItems((prev) => [newPassword, ...prev])
+    const updatedItems = [newPassword, ...passwordItems];
+    setPasswordItems(updatedItems);
+
+    // Update encrypted data
+    const encrypted = encryptData(updatedItems, masterPassword);
+    setEncryptedData(encrypted);
 
     // Reset form and close modal
-    form.reset()
-    setOpen(false)
-  }
+    form.reset();
+    setOpen(false);
+  };
 
   React.useEffect(() => {
-    // Set dark theme on component mount
-    setTheme("dark")
-  }, [setTheme])
+    setTheme("dark");
+  }, [setTheme]);
 
   const togglePasswordVisibility = (id: number) => {
     setShowPassword((prev) => ({
       ...prev,
       [id]: !prev[id],
-    }))
-  }
+    }));
+  };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-  }
+  const copyToClipboard = (text: string, itemId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedItems((prev) => ({ ...prev, [itemId]: true }));
 
-  // ... (rest of the component remains the same until the Add Password button)
+    setTimeout(() => {
+      setCopiedItems((prev) => ({ ...prev, [itemId]: false }));
+    }, 2000);
+  };
+
+  // Filter passwords based on selected category
   const filteredPasswords = React.useMemo(() => {
     return selectedCategory.value === "all"
       ? passwordItems
-      : passwordItems.filter((item) => item.category.toLowerCase() === selectedCategory.value.toLowerCase())
-  }, [passwordItems, selectedCategory.value])
+      : passwordItems.filter(
+          (item) =>
+            item.category.toLowerCase() === selectedCategory.value.toLowerCase()
+        );
+  }, [passwordItems, selectedCategory.value]);
+
+  // Lock the vault (log out)
+  const lockVault = () => {
+    setIsAuthenticated(false);
+    setMasterPassword(null);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="dark">
+        <MasterPasswordAuth onAuthenticate={handleAuthentication} />
+      </div>
+    );
+  }
 
   return (
     <div className="dark">
@@ -325,7 +468,10 @@ export default function PasswordDashboard() {
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+                    <AvatarImage
+                      src="/placeholder.svg?height=32&width=32"
+                      alt="User"
+                    />
                     <AvatarFallback>JD</AvatarFallback>
                   </Avatar>
                   <div>
@@ -335,7 +481,11 @@ export default function PasswordDashboard() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full"
+                    >
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -353,9 +503,9 @@ export default function PasswordDashboard() {
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={lockVault}>
                       <LogOut className="mr-2 h-4 w-4" />
-                      <span>Log out</span>
+                      <span>Lock Vault</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -393,11 +543,15 @@ export default function PasswordDashboard() {
                       <DialogHeader>
                         <DialogTitle>Add New Password</DialogTitle>
                         <DialogDescription>
-                          Add a new password to your vault. All fields are required.
+                          Add a new password to your vault. All fields are
+                          required.
                         </DialogDescription>
                       </DialogHeader>
                       <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <form
+                          onSubmit={form.handleSubmit(onSubmit)}
+                          className="space-y-4"
+                        >
                           <FormField
                             control={form.control}
                             name="name"
@@ -418,7 +572,10 @@ export default function PasswordDashboard() {
                               <FormItem>
                                 <FormLabel>Username/Email</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="e.g. user@example.com" {...field} />
+                                  <Input
+                                    placeholder="e.g. user@example.com"
+                                    {...field}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -431,7 +588,11 @@ export default function PasswordDashboard() {
                               <FormItem>
                                 <FormLabel>Password</FormLabel>
                                 <FormControl>
-                                  <Input type="password" placeholder="Enter password" {...field} />
+                                  <Input
+                                    type="password"
+                                    placeholder="Enter password"
+                                    {...field}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -443,7 +604,10 @@ export default function PasswordDashboard() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Category</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
                                   <FormControl>
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select a category" />
@@ -451,7 +615,10 @@ export default function PasswordDashboard() {
                                   </FormControl>
                                   <SelectContent>
                                     {categories.map((category) => (
-                                      <SelectItem key={category.value} value={category.value}>
+                                      <SelectItem
+                                        key={category.value}
+                                        value={category.value}
+                                      >
                                         {category.label}
                                       </SelectItem>
                                     ))}
@@ -474,12 +641,19 @@ export default function PasswordDashboard() {
             <main className="flex-1 overflow-auto p-6 bg-background">
               <div className="mb-8 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold tracking-tight">Welcome back, John</h2>
-                  <p className="text-muted-foreground">Here's a summary of your password vault</p>
+                  <h2 className="text-2xl font-bold tracking-tight">
+                    Welcome back, John
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Here's a summary of your password vault
+                  </p>
                 </div>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
                       {selectedCategory.label}
                       <ChevronsUpDown className="h-4 w-4 opacity-50" />
                     </Button>
@@ -494,7 +668,7 @@ export default function PasswordDashboard() {
                             <CommandItem
                               key={category.value}
                               onSelect={() => {
-                                setSelectedCategory(category)
+                                setSelectedCategory(category);
                               }}
                               className="flex items-center gap-2 text-sm"
                             >
@@ -511,29 +685,43 @@ export default function PasswordDashboard() {
               <div className="mb-8 grid gap-4 md:grid-cols-3">
                 <Card className="bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-sm">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Total Passwords</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Total Passwords
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">24</div>
-                    <p className="text-xs text-muted-foreground">+3 this month</p>
+                    <div className="text-2xl font-bold">
+                      {passwordItems.length}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      +3 this month
+                    </p>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 backdrop-blur-sm">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Weak Passwords</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Weak Passwords
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">3</div>
-                    <p className="text-xs text-muted-foreground">-2 from last check</p>
+                    <p className="text-xs text-muted-foreground">
+                      -2 from last check
+                    </p>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-br from-green-500/20 to-green-500/5 backdrop-blur-sm">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Password Health</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Password Health
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">87%</div>
-                    <p className="text-xs text-muted-foreground">+5% from last check</p>
+                    <p className="text-xs text-muted-foreground">
+                      +5% from last check
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -542,10 +730,15 @@ export default function PasswordDashboard() {
                 <h3 className="mb-4 text-lg font-medium">Recent Passwords</h3>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {filteredPasswords.map((item) => (
-                    <Card key={item.id} className="overflow-hidden backdrop-blur-sm">
+                    <Card
+                      key={item.id}
+                      className="overflow-hidden backdrop-blur-sm"
+                    >
                       <CardHeader className="p-4">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">{item.name}</CardTitle>
+                          <CardTitle className="text-base">
+                            {item.name}
+                          </CardTitle>
                           <Badge variant="outline" className="bg-muted/50">
                             {item.category}
                           </Badge>
@@ -553,41 +746,74 @@ export default function PasswordDashboard() {
                       </CardHeader>
                       <CardContent className="space-y-4 p-4 pt-0">
                         <div className="relative flex-1">
-                          <Input type="text" value={item.username} readOnly className="pr-10" />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full"
-                            onClick={() => copyToClipboard(item.username)}
-                          >
-                            <Copy className="h-4 w-4" />
-                            <span className="sr-only">Copy username</span>
-                          </Button>
-                        </div>
-                        <div className="relative flex-1">
                           <Input
-                            type={showPassword[item.id] ? "text" : "password"}
-                            value="••••••••••••"
+                            type="text"
+                            value={item.username}
                             readOnly
                             className="pr-10"
                           />
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-8 top-0 h-full"
-                            onClick={() => copyToClipboard("password123")}
+                            className="absolute right-0 top-0 h-full text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              copyToClipboard(
+                                item.username,
+                                `username-${item.id}`
+                              )
+                            }
                           >
-                            <Copy className="h-4 w-4" />
+                            {copiedItems[`username-${item.id}`] ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">Copy username</span>
+                          </Button>
+                        </div>
+                        <div className="relative flex-1">
+                          <Input
+                            type={showPassword[item.id] ? "text" : "password"}
+                            value={
+                              showPassword[item.id]
+                                ? item.password
+                                : "••••••••••••"
+                            }
+                            readOnly
+                            className="pr-20"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-10 top-0 h-full text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              copyToClipboard(
+                                item.password,
+                                `password-${item.id}`
+                              )
+                            }
+                          >
+                            {copiedItems[`password-${item.id}`] ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
                             <span className="sr-only">Copy password</span>
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-0 top-0 h-full"
+                            className="absolute right-0 top-0 h-full text-muted-foreground hover:text-foreground"
                             onClick={() => togglePasswordVisibility(item.id)}
                           >
-                            {showPassword[item.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            <span className="sr-only">Toggle password visibility</span>
+                            {showPassword[item.id] ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">
+                              Toggle password visibility
+                            </span>
                           </Button>
                         </div>
                       </CardContent>
@@ -603,6 +829,5 @@ export default function PasswordDashboard() {
         </div>
       </SidebarProvider>
     </div>
-  )
+  );
 }
-

@@ -66,12 +66,3 @@ export const passwords = pgTable("passwords", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
-
-export const masterPasswords = pgTable("masterPasswords", {
-  email: text("email")
-    .notNull()
-    .references(() => user.email, { onDelete: "cascade" }),
-  password: text("password").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});

@@ -92,6 +92,7 @@ export default function SignUp() {
             description:
               "Your account has been created. Check your email for a verification link.",
           });
+          router.push("/sign-in");
         },
         onError: (ctx) => {
           console.log("error", ctx);

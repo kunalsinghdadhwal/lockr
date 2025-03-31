@@ -2,21 +2,24 @@ import crypto from "crypto";
 
 export async function deriveKey(
   email: string,
+  user_id: string,
   password: string,
-  salt?: string,
-  iterations = 10000,
+  iterations = 100000,
   keyLength = 32,
   digest = "sha256"
 ) {
-  return new Promise<{ key: string; salt: string }>((resolve, reject) => {
-    const input = `${email}:${password}`;
+  return new Promise<{ key: string }>((resolve, reject) => {
+    const salt =
+      process.env.SALT ||
+      "93a52b8f2a75109c5affb35ed5b1aeaa77b412fd3fd29370b43707018c0e8ab4";
     if (!salt) {
-      salt = crypto.randomBytes(16).toString("base64");
+      throw new Error("Salt is required but received undefined");
     }
+    const input = `${email}:${user_id}:${password}`;
 
     crypto.pbkdf2(
-      input,
-      salt,
+      Buffer.from(input, "utf-8"),
+      Buffer.from(salt, "hex"),
       iterations,
       keyLength,
       digest,
@@ -26,7 +29,6 @@ export async function deriveKey(
         } else {
           resolve({
             key: derivedKey.toString("base64"),
-            salt: salt || " ",
           });
         }
       }
