@@ -228,7 +228,7 @@ export default function SignUp() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Master Password</FormLabel>
+                      <FormLabel>Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -302,7 +302,7 @@ export default function SignUp() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Confirm Master Password</FormLabel>
+                      <FormLabel>Confirm Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />

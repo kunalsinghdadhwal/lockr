@@ -4,8 +4,8 @@ const IV_LENGTH = 16;
 
 export async function encryptAES256GCM(
   plainText: string,
-  key: string
-): Promise<{ encryptedText: string; iv: string }> {
+  key: Buffer
+): Promise<{ encryptedText: string }> {
   return new Promise((resolve, reject) => {
     try {
       const iv = randomBytes(IV_LENGTH);
@@ -17,8 +17,7 @@ export async function encryptAES256GCM(
       const authTag = cipher.getAuthTag();
 
       resolve({
-        encryptedText: `${encrypted}:${authTag.toString("base64")}`,
-        iv: iv.toString("base64"),
+        encryptedText: `${iv.toString("base64")}:${encrypted}:${authTag.toString("base64")}`,
       });
     } catch (error) {
       reject(error);
@@ -28,14 +27,14 @@ export async function encryptAES256GCM(
 
 export async function decryptAES256GCM(
   encryptedText: string,
-  key: Buffer,
-  ivBase64: string
+  key: Buffer
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
-      const [encryptedBase64, authTagBase64] = encryptedText.split(":");
+      const [ivbase64, encryptedBase64, authTagBase64] =
+        encryptedText.split(":");
 
-      const iv = Buffer.from(ivBase64, "base64");
+      const iv = Buffer.from(ivbase64, "base64");
       const authTag = Buffer.from(authTagBase64, "base64");
       const decipher = createDecipheriv("aes-256-gcm", key, iv);
       decipher.setAuthTag(authTag);

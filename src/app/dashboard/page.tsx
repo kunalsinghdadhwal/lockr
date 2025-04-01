@@ -101,16 +101,16 @@ import * as z from "zod";
 import { deriveKey } from "@/helpers/encryption";
 import { authClient } from "@/lib/auth-client";
 import { useEffect } from "react";
-import { decryptAES256GCM } from "@/helpers/aesEncryption";
+import { decryptAES256GCM, encryptAES256GCM } from "@/helpers/aesEncryption";
 
 type PasswordItem = {
   userId: string;
   username: string;
   password: string;
   notes?: string | null; 
-  serviceName: string;
-  createdAt: string;
-  updatedAt: string;
+  category: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 const categories = [
@@ -321,38 +321,66 @@ export default function PasswordDashboard() {
   const handleAuthentication = (password: string) => {
     setMasterPassword(password);
     setIsAuthenticated(true);
-
-    const encrypted = encryptData(passwordItems, password);
-    setEncryptedData(encrypted);
   };
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!masterPassword) return;
 
-    // Calculate password strength (simple example)
-    const strength = Math.floor(Math.random() * (95 - 70 + 1)) + 70;
-
+    const session = await authClient.getSession();
+    if (!session) return;
+    const encryptionKey = localStorage.getItem("masterKey") as string;
+    const userId = session.data?.session.userId as string;
+    
     // Create new password item
     const newPassword = {
-      id: passwordItems.length + 1,
+      userId: userId,
       name: values.name,
       username: values.username,
       password: values.password,
-      strength,
       lastUpdated: "Just now",
-      logo: "/placeholder.svg?height=40&width=40",
       category: values.category,
     };
-
+    
     // Add to passwords list
     const updatedItems = [newPassword, ...passwordItems];
     setPasswordItems(updatedItems);
-
+    
     // Update encrypted data
-    const encrypted = encryptData(updatedItems, masterPassword);
-    setEncryptedData(encrypted);
+    const encryptedPassword = await encryptAES256GCM(values.password, Buffer.from(encryptionKey, "base64"));
 
-    // Reset form and close modal
+    const newEncryptedPassword = {
+      userId: userId,
+      name: values.name,
+      username: values.username,
+      password: encryptedPassword.encryptedText,
+      category: values.category,
+    }
+    const savePasswordEntry = async () => {
+      try {
+        const response = await fetch('/api/saveEntry', {
+          method: 'POST',
+          headers: {
+          'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newEncryptedPassword),
+        });
+
+    if (!response.ok) {
+      throw new Error('Failed to save password entry');
+    }
+
+    const data = await response.json();
+    console.log('Password entry saved:', data);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
+
+savePasswordEntry();
+
+    const updatedEncryptedData = [newEncryptedPassword, ...encryptedData];
+    setEncryptedData(updatedEncryptedData);
+
     form.reset();
     setOpen(false);
   };

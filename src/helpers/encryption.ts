@@ -4,7 +4,7 @@ export async function deriveKey(
   email: string,
   user_id: string,
   password: string,
-  iterations = 100000,
+  iterations = 10000,
   keyLength = 32,
   digest = "sha256"
 ) {
