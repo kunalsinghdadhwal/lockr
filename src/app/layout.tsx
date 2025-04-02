@@ -3,7 +3,6 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Inter } from "next/font/google";
 import ThemeProvider from "@/utils/ThemeProvider";
-import { ChatBot } from "@/components/chat-bot";
 
 
 export const metadata: Metadata = {
@@ -19,10 +18,9 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`bg-white dark:bg-black ${inter.className}`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider  >
           <main>{children}</main>
         </ThemeProvider>
-        <ChatBot />
         <Toaster />
       </body>
     </html>

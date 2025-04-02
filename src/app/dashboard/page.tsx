@@ -267,9 +267,6 @@ function MasterPasswordAuth({
 
 export default function PasswordDashboard() {
   const [selectedCategory, setSelectedCategory] = React.useState(categories[0]);
-  const [showPassword, setShowPassword] = React.useState<
-    Record<number, boolean>
-  >({});
   const [copiedItems, setCopiedItems] = React.useState<Record<string, boolean>>(
     {}
   );
@@ -287,7 +284,7 @@ export default function PasswordDashboard() {
       const decryptedPasswords = await Promise.all(
         passwords.map(async (entry) => ({
           ...entry,
-          password: await decryptAES256GCM(entry.password, Buffer.from(encryptionKey, "base64"), entry.iv),
+          password: await decryptAES256GCM(entry.password, Buffer.from(encryptionKey, "base64")),
         }))
       );
       console.log(passwords);
@@ -389,12 +386,6 @@ savePasswordEntry();
     setTheme("dark");
   }, [setTheme]);
 
-  const togglePasswordVisibility = (id: number) => {
-    setShowPassword((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
 
   const copyToClipboard = (text: string, itemId: string) => {
     navigator.clipboard.writeText(text);
@@ -759,13 +750,13 @@ savePasswordEntry();
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {filteredPasswords.map((item) => (
                     <Card
-                      key={item.id}
+                      key={item.userId}
                       className="overflow-hidden backdrop-blur-sm"
                     >
                       <CardHeader className="p-4">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-base">
-                            {item.name}
+                            {item.username}
                           </CardTitle>
                           <Badge variant="outline" className="bg-muted/50">
                             {item.category}
@@ -787,11 +778,11 @@ savePasswordEntry();
                             onClick={() =>
                               copyToClipboard(
                                 item.username,
-                                `username-${item.id}`
+                                `username-${item.userId}`
                               )
                             }
                           >
-                            {copiedItems[`username-${item.id}`] ? (
+                            {copiedItems[`username-${item.userId}`] ? (
                               <Check className="h-4 w-4 text-green-500" />
                             ) : (
                               <Copy className="h-4 w-4" />
@@ -801,12 +792,6 @@ savePasswordEntry();
                         </div>
                         <div className="relative flex-1">
                           <Input
-                            type={showPassword[item.id] ? "text" : "password"}
-                            value={
-                              showPassword[item.id]
-                                ? item.password
-                                : "••••••••••••"
-                            }
                             readOnly
                             className="pr-20"
                           />
@@ -817,11 +802,11 @@ savePasswordEntry();
                             onClick={() =>
                               copyToClipboard(
                                 item.password,
-                                `password-${item.id}`
+                                `password-${item.userId}`
                               )
                             }
                           >
-                            {copiedItems[`password-${item.id}`] ? (
+                            {copiedItems[`password-${item.userId}`] ? (
                               <Check className="h-4 w-4 text-green-500" />
                             ) : (
                               <Copy className="h-4 w-4" />
@@ -832,13 +817,7 @@ savePasswordEntry();
                             variant="ghost"
                             size="icon"
                             className="absolute right-0 top-0 h-full text-muted-foreground hover:text-foreground"
-                            onClick={() => togglePasswordVisibility(item.id)}
                           >
-                            {showPassword[item.id] ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
                             <span className="sr-only">
                               Toggle password visibility
                             </span>
@@ -846,7 +825,7 @@ savePasswordEntry();
                         </div>
                       </CardContent>
                       <CardFooter className="border-t border-border/40 p-4 text-xs text-muted-foreground">
-                        Last updated {item.lastUpdated}
+                        Last updated 
                       </CardFooter>
                     </Card>
                   ))}

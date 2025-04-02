@@ -338,9 +338,7 @@ export default function SignUp() {
                   )}
                 />
                 <LoadingButton
-                  type="submit"
                   pending={pending}
-                  className="w-full bg-black hover:bg-black/80 text-white dark:bg-white dark:text-black dark:hover:bg-white/90"
                 >
                   Create Account
                 </LoadingButton>

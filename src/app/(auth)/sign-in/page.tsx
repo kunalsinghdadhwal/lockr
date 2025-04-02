@@ -235,9 +235,7 @@ export default function LoginPage() {
 
               {/* Sign in Button */}
               <LoadingButton
-                type="submit"
                 pending={pendingCredentials}
-                className="w-full bg-black hover:bg-black/80 text-white dark:bg-white dark:text-black dark:hover:bg-white/90"
               >
                 Sign in
               </LoadingButton>
@@ -258,8 +256,6 @@ export default function LoginPage() {
             {/* Social Buttons */}
             <div className="grid grid-cols-2 gap-4">
               <LoadingButton
-                variant="outline"
-                className="w-full"
                 pending={pendingGoogle}
                 onClick={handleSignInWithGoogle}
               >
@@ -267,8 +263,6 @@ export default function LoginPage() {
                 Google
               </LoadingButton>
               <LoadingButton
-                variant="outline"
-                className="w-full"
                 pending={pendingGithub}
                 onClick={handleSignInWithGithub}
               >
