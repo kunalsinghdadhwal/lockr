@@ -1,237 +1,261 @@
-"use client"
 
-import { SiteHeader } from "@/components/site-header"
+import Link from "next/link"
+import { ArrowRight, Check, Lock, Shield, Zap } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { motion } from "framer-motion"
-import Footer from "@/components/Footer"
-import { Zap, Command, Scale, Bot, Shield, Sparkles, Check } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="relative flex min-h-screen flex-col">
-      <SiteHeader />
-      <main className="flex-1">
-        <section className="flex min-h-screen flex-col items-center justify-center space-y-10 py-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="container flex flex-col items-center justify-center gap-6 text-center"
-          >
-            <motion.a
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              href="#"
-              className="inline-flex items-center rounded-full bg-muted px-4 py-1.5 text-sm font-medium"
+    <div className="flex min-h-screen flex-col bg-white dark:bg-black text-black dark:text-white">
+      <header className="container flex h-16 items-center justify-between px-4 md:px-6 bg-white dark:bg-black text-black dark:text-white">
+        <Link href="/" className="flex items-center gap-2 font-bold">
+          <Lock className="h-6 w-6" />
+          <span>SecureVault</span>
+        </Link>
+        <nav className="hidden md:flex gap-6">
+          <Link href="#features" className="text-sm font-medium hover:underline underline-offset-4">
+            Features
+          </Link>
+          <Link href="#security" className="text-sm font-medium hover:underline underline-offset-4">
+            Security
+          </Link>
+          <Link href="#pricing" className="text-sm font-medium hover:underline underline-offset-4">
+            Pricing
+          </Link>
+        </nav>
+        <div className="flex items-center gap-4">
+          <Link href="/sign-in">
+            <Button
+              variant="outline"
+              className="border-gray-200 dark:border-white/20 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
             >
-              🎉 <Separator className="mx-2 h-4" orientation="vertical" /> Introducing Quinx
-            </motion.a>
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-4xl font-bold leading-tight tracking-tighter md:text-6xl lg:text-7xl lg:leading-[1.1]"
-            >
-              Build Discord Bots
-              <br />
-              Without Code
-            </motion.h1>
-            <motion.span
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="max-w-[750px] text-center text-lg text-muted-foreground sm:text-xl"
-            >
-              Create, deploy, and scale Discord bots without writing a single line of code.
-            </motion.span>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="flex gap-4"
-            >
-              <Button size="lg" className="h-12 px-8">
-                Start Building
-              </Button>
-              <Button size="lg" variant="outline" className="h-12 px-8">
-                View Demo
-              </Button>
-            </motion.div>
-          </motion.div>
-        </section>
-
-        <Separator className="my-12" />
-
-        <section className="container space-y-12 py-12 md:py-24 lg:py-32">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mx-auto flex max-w-[58rem] flex-col items-center justify-center gap-4 text-center"
-          >
-            <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-5xl">Features built for scale</h2>
-            <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
-              Quinx provides all the tools you need to create powerful Discord bots that can scale to millions of users.
-            </p>
-          </motion.div>
-          <div className="mx-auto grid gap-8 sm:max-w-3xl sm:grid-cols-2 lg:max-w-5xl lg:grid-cols-3">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{
-                  rotateX: index % 2 === 0 ? 5 : -5,
-                  rotateY: index % 3 === 0 ? 5 : -5,
-                  transition: { duration: 0.3 },
-                }}
-                className="relative overflow-hidden rounded-lg border bg-background p-2"
-              >
-                <div className="flex h-[180px] flex-col justify-between rounded-md p-6">
-                  <feature.icon className="h-12 w-12 text-primary" />
-                  <div className="space-y-2">
-                    <h3 className="font-bold">{feature.name}</h3>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        <Separator className="my-12" />
-
-        <section id="pricing" className="container py-12 md:py-24 lg:py-32">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mx-auto flex max-w-[58rem] flex-col items-center justify-center gap-4 text-center"
-          >
-            <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-5xl">Simple, transparent pricing</h2>
-            <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
-              Choose the plan that's right for you and start building amazing Discord bots today.
-            </p>
-          </motion.div>
-          <div className="mt-12 grid gap-8 md:grid-cols-2">
-            {pricingPlans.map((plan, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="flex flex-col overflow-hidden rounded-lg border bg-background"
-              >
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold">{plan.name}</h3>
-                  <div className="mt-4 flex items-baseline text-3xl font-bold">
-                    ${plan.price}
-                    <span className="ml-1 text-xl font-normal text-muted-foreground">/month</span>
-                  </div>
-                  <p className="mt-4 text-muted-foreground">{plan.description}</p>
-                </div>
-                <div className="flex flex-1 flex-col justify-between p-6">
-                  <ul className="space-y-4">
-                    {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start">
-                        <Check className="mr-2 h-5 w-5 text-primary" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button className="mt-8 w-full">{plan.buttonText}</Button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        <Separator className="my-12" />
-
-        <section className="container py-12 md:py-24 lg:py-32">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mx-auto flex max-w-[58rem] flex-col items-center justify-center gap-4 text-center"
-          >
-            <h2 className="text-3xl font-bold leading-[1.1] sm:text-3xl md:text-5xl">Ready to get started?</h2>
-            <p className="max-w-[85%] leading-normal text-muted-foreground sm:text-lg sm:leading-7">
-              Create your first Discord bot in minutes. No credit card required.
-            </p>
-            <Button size="lg" className="mt-4">
-              Start Building Now
+              Login
             </Button>
-          </motion.div>
+          </Link>
+          <Link href="/sign-up" className="hidden md:block">
+            <Button className="bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90">
+              Get Started
+            </Button>
+          </Link>
+        </div>
+      </header>
+      <main className="flex-1">
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
+              <div className="flex flex-col justify-center space-y-4">
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                    Secure Your Digital Life with One Master Password
+                  </h1>
+                  <p className="max-w-[600px] text-gray-400 md:text-xl">
+                    Store, generate, and auto-fill passwords across all your devices with military-grade encryption.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                  <Link href="/sign-up">
+                    <Button className="bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90">
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="#features">
+                    <Button
+                      variant="outline"
+                      className="border-gray-200 dark:border-white/20 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+                    >
+                      Learn More
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="flex items-center justify-center">
+                <div className="relative w-full max-w-[400px] overflow-hidden rounded-xl border border-white/10 bg-black p-2 shadow-2xl">
+                  <div className="animate-pulse-slow absolute -left-20 -top-20 h-40 w-40 rounded-full bg-white/5"></div>
+                  <div className="animate-pulse-slow absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-white/10"></div>
+                  <div className="relative z-10 rounded-lg bg-zinc-900 p-4">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-5 w-5 text-white" />
+                        <span className="font-medium">Password Vault</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <div className="h-2 w-2 rounded-full bg-white/20"></div>
+                        <div className="h-2 w-2 rounded-full bg-white/20"></div>
+                        <div className="h-2 w-2 rounded-full bg-white/20"></div>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="h-4 w-24 rounded bg-white/10"></div>
+                          <div className="h-4 w-32 rounded bg-white/10"></div>
+                        </div>
+                        <div className="h-3 w-full rounded bg-white/5"></div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="h-4 w-28 rounded bg-white/10"></div>
+                          <div className="h-4 w-36 rounded bg-white/10"></div>
+                        </div>
+                        <div className="h-3 w-full rounded bg-white/5"></div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="h-4 w-20 rounded bg-white/10"></div>
+                          <div className="h-4 w-40 rounded bg-white/10"></div>
+                        </div>
+                        <div className="h-3 w-full rounded bg-white/5"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
-		<Footer />
+        <section
+          id="features"
+          className="w-full border-t border-black/10 dark:border-white/10 bg-gray-50 dark:bg-zinc-950 py-12 md:py-24 lg:py-32"
+        >
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-white/10 px-3 py-1 text-sm">Features</div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need</h2>
+                <p className="max-w-[900px] text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  SecureVault offers a comprehensive suite of tools to manage your digital identity.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3 lg:gap-12">
+              <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-black p-6 transition-all hover:shadow-xl">
+                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <div className="relative z-10 flex flex-col items-center text-center">
+                  <Shield className="h-12 w-12 mb-4 text-white" />
+                  <h3 className="text-xl font-bold">Password Generator</h3>
+                  <p className="mt-2 text-gray-400">Create strong, unique passwords with our advanced generator.</p>
+                </div>
+              </div>
+              <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-black p-6 transition-all hover:shadow-xl">
+                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <div className="relative z-10 flex flex-col items-center text-center">
+                  <Zap className="h-12 w-12 mb-4 text-white" />
+                  <h3 className="text-xl font-bold">Auto-Fill</h3>
+                  <p className="mt-2 text-gray-400">Save time with automatic form filling across all your devices.</p>
+                </div>
+              </div>
+              <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-black p-6 transition-all hover:shadow-xl">
+                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <div className="relative z-10 flex flex-col items-center text-center">
+                  <Lock className="h-12 w-12 mb-4 text-white" />
+                  <h3 className="text-xl font-bold">Secure Storage</h3>
+                  <p className="mt-2 text-gray-400">End-to-end encryption ensures your data stays private.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section
+          id="security"
+          className="w-full border-t border-black/10 dark:border-white/10 bg-white dark:bg-black py-12 md:py-24 lg:py-32"
+        >
+          <div className="container grid items-center gap-6 px-4 md:px-6 lg:grid-cols-2 lg:gap-10">
+            <div className="space-y-2">
+              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Military-Grade Security</h2>
+              <p className="max-w-[600px] text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                Your data is protected with AES-256 encryption, the same standard used by governments and military
+                organizations worldwide.
+              </p>
+              <ul className="mt-6 space-y-3">
+                <li className="flex items-center gap-2">
+                  <Check className="h-5 w-5 text-white" />
+                  <span>End-to-end encryption</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-5 w-5 text-white" />
+                  <span>Zero-knowledge architecture</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-5 w-5 text-white" />
+                  <span>Two-factor authentication</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-5 w-5 text-white" />
+                  <span>Biometric authentication</span>
+                </li>
+              </ul>
+            </div>
+            <div className="flex items-center justify-center">
+              <div className="relative h-[300px] w-[300px] md:h-[400px] md:w-[400px]">
+                <div className="animate-spin-slow absolute inset-0 rounded-full border-2 border-dashed border-white/10"></div>
+                <div className="animate-pulse absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5"></div>
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <Shield className="h-16 w-16 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section
+          id="cta"
+          className="w-full border-t border-black/10 dark:border-white/10 bg-gray-50 dark:bg-zinc-950 py-12 md:py-24 lg:py-32"
+        >
+          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
+            <div className="space-y-3">
+              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
+                Ready to secure your digital life?
+              </h2>
+              <p className="mx-auto max-w-[600px] text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                Join thousands of users who trust SecureVault with their passwords.
+              </p>
+            </div>
+            <div className="mx-auto flex flex-col gap-2 min-[400px]:flex-row">
+              <Link href="/sign-up">
+                <Button className="bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-white/90">
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/sign-in">
+                <Button
+                  variant="outline"
+                  className="border-gray-200 dark:border-white/20 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+                >
+                  Login
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
+      <footer className="border-t border-white/10 dark:border-white/10 border-black/10 bg-black dark:bg-black bg-white py-6 md:py-0">
+        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row md:py-0">
+          <div className="flex items-center gap-2 font-bold text-black dark:text-white">
+            <Lock className="h-5 w-5" />
+            <span>SecureVault</span>
+          </div>
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400 md:text-left">
+            &copy; {new Date().getFullYear()} SecureVault. All rights reserved.
+          </p>
+          <div className="flex items-center gap-4">
+            <nav className="flex gap-4 sm:gap-6">
+              <Link href="#" className="text-xs text-gray-600 dark:text-gray-400 hover:underline underline-offset-4">
+                Terms
+              </Link>
+              <Link href="#" className="text-xs text-gray-600 dark:text-gray-400 hover:underline underline-offset-4">
+                Privacy
+              </Link>
+              <Link href="#" className="text-xs text-gray-600 dark:text-gray-400 hover:underline underline-offset-4">
+                Contact
+              </Link>
+            </nav>
+            <ThemeToggle />
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
-
-const features = [
-  {
-    name: "Easy Setup",
-    description: "Get your bot up and running in minutes with our intuitive interface.",
-    icon: Zap,
-  },
-  {
-    name: "Powerful Commands",
-    description: "Create complex commands with our visual command builder.",
-    icon: Command,
-  },
-  {
-    name: "Scale Infinitely",
-    description: "Built to handle millions of users and messages.",
-    icon: Scale,
-  },
-  {
-    name: "AI-Powered",
-    description: "Leverage artificial intelligence to create smarter responses.",
-    icon: Bot,
-  },
-  {
-    name: "Enterprise Security",
-    description: "Bank-grade security to protect your bot and users.",
-    icon: Shield,
-  },
-  {
-    name: "Custom Features",
-    description: "Build custom features without touching any code.",
-    icon: Sparkles,
-  },
-] as const
-
-const pricingPlans = [
-  {
-    name: "Free",
-    price: 0,
-    description: "Perfect for small communities and hobbyists.",
-    features: ["1 bot", "Up to 100 users", "Basic command set", "Community support"],
-    buttonText: "Start for Free",
-  },
-  {
-    name: "Pro",
-    price: 8,
-    description: "Ideal for growing communities and businesses.",
-    features: [
-      "Unlimited bots",
-      "Unlimited users",
-      "Advanced commands",
-      "Priority support",
-      "Custom branding",
-      "Analytics dashboard",
-    ],
-    buttonText: "Upgrade to Pro",
-  },
-] as const
 

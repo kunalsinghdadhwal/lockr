@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Inter } from "next/font/google";
 import ThemeProvider from "@/utils/ThemeProvider";
+import { ChatBot } from "@/components/chat-bot";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -32,6 +33,7 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <main>{children}</main>
         </ThemeProvider>
+        <ChatBot />
         <Toaster />
       </body>
     </html>
