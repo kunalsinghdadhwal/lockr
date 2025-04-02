@@ -78,7 +78,7 @@ export default function LandingPage() {
                     <div className="flex items-center justify-between border-b border-white/10 pb-2">
                       <div className="flex items-center gap-2">
                         <Lock className="h-5 w-5 text-white" />
-                        <span className="font-medium">Password Vault</span>
+                        <span className="font-medium">Web Programming</span>
                       </div>
                       <div className="flex gap-1">
                         <div className="h-2 w-2 rounded-full bg-white/20"></div>
@@ -86,27 +86,32 @@ export default function LandingPage() {
                         <div className="h-2 w-2 rounded-full bg-white/20"></div>
                       </div>
                     </div>
-                    <div className="mt-4 space-y-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <div className="h-4 w-24 rounded bg-white/10"></div>
-                          <div className="h-4 w-32 rounded bg-white/10"></div>
-                        </div>
-                        <div className="h-3 w-full rounded bg-white/5"></div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <div className="h-4 w-28 rounded bg-white/10"></div>
-                          <div className="h-4 w-36 rounded bg-white/10"></div>
-                        </div>
-                        <div className="h-3 w-full rounded bg-white/5"></div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <div className="h-4 w-20 rounded bg-white/10"></div>
-                          <div className="h-4 w-40 rounded bg-white/10"></div>
-                        </div>
-                        <div className="h-3 w-full rounded bg-white/5"></div>
+                    {/* Team Members Table */}
+                    <div className="mt-6 border-t border-white/10 pt-4">
+                      <div className="text-sm font-medium text-white/80 mb-3">Team Members</div>
+                      <div className="rounded-md overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-white/5">
+                            <tr>
+                              <th className="py-2 px-3 text-left font-medium text-white/70">Name</th>
+                              <th className="py-2 px-3 text-right font-medium text-white/70">ID</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            <tr className="bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
+                              <td className="py-2 px-3 text-white/80">Kunal Singh Dadhwal</td>
+                              <td className="py-2 px-3 text-right text-white/60">23BDS1097</td>
+                            </tr>
+                            <tr className="bg-white/[0.01] hover:bg-white/[0.05] transition-colors">
+                              <td className="py-2 px-3 text-white/80">Pranay Karvi</td>
+                              <td className="py-2 px-3 text-right text-white/60">23BDS1137</td>
+                            </tr>
+                            <tr className="bg-white/[0.02] hover:bg-white/[0.05] transition-colors">
+                              <td className="py-2 px-3 text-white/80">Tarryn Dsilva</td>
+                              <td className="py-2 px-3 text-right text-white/60">23BDS1107</td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>

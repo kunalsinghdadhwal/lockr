@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const newEntry = await db.insert(passwords).values({
+    await db.insert(passwords).values({
       userId: body.userId,
       username: body.username,
       password: body.password,

@@ -673,7 +673,7 @@ savePasswordEntry();
                     Welcome back, John
                   </h2>
                   <p className="text-muted-foreground">
-                    Here's a summary of your password vault
+                    Here&#39;s a summary of your password vault
                   </p>
                 </div>
                 <Popover>

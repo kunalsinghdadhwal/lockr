@@ -86,7 +86,7 @@ export default function EmailVerifiedPage() {
                     transition={{ delay: 0.7 }}
                   >
                     <p className="text-muted-foreground">
-                      Your account has been successfully activated. You're all
+                      Your account has been successfully activated. You&#39;re all
                       set to go!
                     </p>
                   </motion.div>
