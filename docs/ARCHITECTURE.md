@@ -6,6 +6,8 @@ Lockr is an end-to-end encrypted password manager built as a SaaS product. The s
 
 Lockr uses a **vault key architecture** where a randomly generated Vault Key encrypts all entries, and the user's master password protects that Vault Key. This means changing your master password is instant (re-wrap one key) rather than re-encrypting every stored entry.
 
+The entire application -- frontend, API, and middleware -- is a single Next.js deployment. No separate backend service.
+
 ---
 
 ## System Overview
@@ -13,25 +15,42 @@ Lockr uses a **vault key architecture** where a randomly generated Vault Key enc
 ```mermaid
 graph TB
     subgraph Client ["Browser (Client-Side)"]
-        UI[React / Next.js UI]
+        UI["React UI<br/>(client components)"]
         WC[Web Crypto API]
         KDF[Key Derivation<br/>PBKDF2 or Argon2id]
         ENC[AES-256-GCM<br/>Encrypt / Decrypt]
         KW[AES-KW<br/>Key Wrap / Unwrap]
-        MEM[In-Memory Key Store<br/>React Context]
+        MEM["In-Memory Key Store<br/>(Zustand / module scope)"]
     end
 
-    subgraph Server ["Server (Next.js API Routes)"]
-        AUTH[Authentication<br/>better-auth]
-        API[Vault API<br/>CRUD Encrypted Blobs]
-        MW[Middleware<br/>Session Validation]
+    subgraph NextApp ["Next.js (Single Deployment on Vercel)"]
+        subgraph Pages ["App Router (SSR + Client)"]
+            LP[Landing Page<br/>SSR -- marketing, SEO]
+            AUTH_P[Auth Pages<br/>sign-in, sign-up, reset]
+            DASH["Dashboard<br/>'use client' -- vault UI"]
+        end
+
+        subgraph API ["API Routes (/api/*)"]
+            AV["/api/vault/*<br/>setup, unlock, entries,<br/>rotate-key, upgrade"]
+            AA["/api/auth/[...all]<br/>better-auth handler"]
+            AW["/api/stripe/webhook<br/>payment events"]
+        end
+
+        subgraph SVC ["Service Layer (framework-agnostic)"]
+            VS[vault.service.ts<br/>CRUD encrypted blobs]
+            AS[auth helpers<br/>session validation]
+            PS[payment.service.ts<br/>tier management]
+        end
+
+        MW["middleware.ts<br/>Route protection<br/>Session validation"]
     end
 
-    subgraph DB ["PostgreSQL"]
-        UT[user table]
-        ST[session table]
-        ET[entries table<br/>encrypted blobs only]
-        UKT[user_keys table<br/>public key + wrapped private key]
+    subgraph DB ["PostgreSQL (Neon)"]
+        UT[user]
+        ST[session]
+        AT[account]
+        ET[entries<br/>encrypted blobs]
+        VT[verification]
     end
 
     UI --> WC
@@ -42,18 +61,180 @@ graph TB
     KW --> MEM
     MEM --> ENC
 
-    UI -->|HTTPS| MW
-    MW --> AUTH
+    UI -->|fetch| MW
     MW --> API
-    AUTH --> UT
-    AUTH --> ST
-    API --> ET
-    API --> UKT
+    MW --> Pages
+    AV --> VS
+    AA --> AS
+    AW --> PS
+    VS --> ET
+    AS --> UT
+    AS --> ST
+    PS --> UT
 
     style Client fill:#1a1a2e,stroke:#e94560,color:#eee
-    style Server fill:#16213e,stroke:#0f3460,color:#eee
+    style NextApp fill:#16213e,stroke:#0f3460,color:#eee
+    style Pages fill:#1a1a2e,stroke:#533483,color:#eee
+    style API fill:#1a1a2e,stroke:#533483,color:#eee
+    style SVC fill:#1a1a2e,stroke:#533483,color:#eee
     style DB fill:#0f3460,stroke:#533483,color:#eee
 ```
+
+---
+
+## Project Structure
+
+```
+src/
+  app/
+    (marketing)/
+      page.tsx                    -- landing page (SSR, SEO)
+      pricing/page.tsx            -- pricing page (SSR, SEO)
+    (auth)/
+      sign-in/page.tsx
+      sign-up/page.tsx
+      forgot-password/page.tsx
+      reset-password/page.tsx
+      email-verified/page.tsx
+    dashboard/
+      page.tsx                    -- vault UI ("use client", all crypto here)
+    api/
+      auth/[...all]/route.ts      -- better-auth catch-all handler
+      vault/
+        setup/route.ts            -- POST: store salt, wrapped VK, auth hash, kdf_params
+        unlock/route.ts           -- GET: return vault metadata for key derivation
+        entries/route.ts          -- GET: fetch encrypted blobs, POST: save encrypted blob
+        entries/[id]/route.ts     -- PUT: update entry, DELETE: remove entry
+        rotate-key/route.ts       -- POST: re-wrap VK on master password change
+        upgrade/route.ts          -- POST: swap KDF, add recovery key blob
+      stripe/
+        webhook/route.ts          -- POST: handle Stripe payment events
+
+  services/
+    vault.service.ts              -- vault CRUD logic (framework-agnostic)
+    payment.service.ts            -- tier management, Stripe helpers
+
+  crypto/                         -- client-side only, imported by dashboard
+    kdf.ts                        -- PBKDF2 + Argon2id wrappers (Web Crypto API)
+    vault-key.ts                  -- VK generation, AES-KW wrap/unwrap
+    entry-crypto.ts               -- AES-256-GCM encrypt/decrypt entry blobs
+    auth-key.ts                   -- HKDF derivation of auth key from MEK
+    recovery.ts                   -- recovery key generation + VK wrapping (premium)
+    store.ts                      -- in-memory key store (Zustand or module scope)
+
+  db/
+    schema.ts                     -- Drizzle schema (all tables)
+    drizzle.ts                    -- database connection
+    migrations/                   -- Drizzle Kit generated SQL
+
+  lib/
+    auth.ts                       -- better-auth server config
+    auth-client.ts                -- better-auth client
+    resend.ts                     -- email service
+    zod.ts                        -- shared validation schemas
+    utils.ts
+
+  middleware.ts                   -- route protection, session checks
+
+  components/
+    ui/                           -- shadcn/ui primitives
+    ...                           -- app-specific components
+```
+
+**Key design rule:** API route files (`route.ts`) are thin handlers -- they parse the request, call a function in `services/`, and return a response. All business logic lives in `services/`. This keeps the door open for extracting to a separate backend later if a mobile app or browser extension is added.
+
+---
+
+## API Routes
+
+All routes are Next.js API route handlers under `src/app/api/`.
+
+| Method | Route | Auth Required | Purpose |
+|--------|-------|:---:|---------|
+| `*` | `/api/auth/[...all]` | No | better-auth handler (sign-up, sign-in, OAuth, email verify, password reset) |
+| `POST` | `/api/vault/setup` | Yes | First-time vault init: store salt, wrapped VK, auth key hash, KDF params |
+| `GET` | `/api/vault/unlock` | Yes | Return vault_salt, encrypted_vault_key, kdf_params, auth_key_hash |
+| `GET` | `/api/vault/entries` | Yes | Fetch all encrypted entry blobs for the authenticated user |
+| `POST` | `/api/vault/entries` | Yes | Save a new encrypted entry blob |
+| `PUT` | `/api/vault/entries/[id]` | Yes | Update an existing encrypted entry blob |
+| `DELETE` | `/api/vault/entries/[id]` | Yes | Delete an entry |
+| `POST` | `/api/vault/rotate-key` | Yes | Master password change: store new wrapped VK + auth key hash |
+| `POST` | `/api/vault/upgrade` | Yes | Tier upgrade: swap KDF params, add recovery vault key blob |
+| `POST` | `/api/stripe/webhook` | No (Stripe signature) | Handle subscription created, updated, canceled events |
+
+Session validation on "Auth Required" routes: middleware extracts the session cookie, verifies it against the `session` table, and injects the authenticated `userId` into the request. The API route handler never trusts a client-sent `userId` -- it always uses the session-verified identity.
+
+---
+
+## Database Schema
+
+```mermaid
+erDiagram
+    user {
+        text id PK
+        text name
+        text email UK
+        boolean emailVerified
+        text image
+        text role
+        text tier "free | premium"
+        bytea vault_salt "per-user, 32 bytes"
+        text encrypted_vault_key "VK wrapped with MEK"
+        text recovery_vault_key "VK wrapped with recovery key (premium)"
+        text auth_key_hash "hash of derived Auth Key"
+        jsonb kdf_params "algo, iterations, memory, parallelism"
+        boolean vault_initialized "false until first setup"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    session {
+        text id PK
+        text token UK
+        timestamp expiresAt
+        text ipAddress
+        text userAgent
+        text userId FK
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    account {
+        text id PK
+        text accountId
+        text providerId
+        text userId FK
+        text password "bcrypt hash (email/password provider)"
+        text accessToken
+        text refreshToken
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    entries {
+        uuid id PK
+        text userId FK
+        text encrypted_blob "iv:ciphertext:authTag (base64)"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    verification {
+        text id PK
+        text identifier
+        text value
+        timestamp expiresAt
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    user ||--o{ session : has
+    user ||--o{ account : has
+    user ||--o{ entries : owns
+    user ||--o{ verification : has
+```
+
+**What changed from the current schema:** the `passwords` table (with plaintext `username`, `serviceName`, `notes` columns) is replaced by `entries` with a single opaque `encrypted_blob` column. All metadata lives inside the encrypted blob -- the server cannot read any of it.
 
 ---
 
@@ -104,28 +285,29 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant U as User (Browser)
-    participant S as Server
+    participant N as Next.js (API Routes)
     participant DB as PostgreSQL
 
     U->>U: Enter email, account password, master password
-    U->>S: Sign up with email + account password (better-auth)
-    S->>DB: Create user record, hash account password (bcrypt)
-    S-->>U: Account created, verification email sent
-    U->>U: Verify email
+    U->>N: POST /api/auth/sign-up (email + account password)
+    N->>DB: Create user record (tier=free, vault_initialized=false), hash account password (bcrypt)
+    N-->>U: Account created, verification email sent via Resend
+    U->>U: Click verification link in email
 
-    Note over U: First-time vault setup
-    U->>U: Generate random salt (32 bytes)
-    U->>U: Derive MEK from master password + salt (KDF)
+    Note over U: First-time vault setup (runs in browser)
+    U->>U: Generate random salt (32 bytes) via crypto.getRandomValues
+    U->>U: Derive MEK = PBKDF2(master_password, salt, 600k iter)
     U->>U: Derive Auth Key = HKDF(MEK, "lockr-auth")
-    U->>U: Generate random Vault Key (256-bit)
-    U->>U: Wrap VK with MEK (AES-KW)
+    U->>U: Generate random Vault Key (256-bit) via crypto.getRandomValues
+    U->>U: Wrap VK with MEK using AES-KW
 
-    U->>S: POST /api/vault/setup
-    Note right of U: { vault_salt, encrypted_vault_key,<br/>auth_key_hash: hash(Auth Key),<br/>kdf_params }
-    S->>DB: Store vault_salt, encrypted_vault_key, auth_key_hash, kdf_params
-    S-->>U: Vault initialized
+    U->>N: POST /api/vault/setup (session cookie)
+    Note right of U: { vault_salt, encrypted_vault_key,<br/>auth_key_hash: SHA-256(Auth Key),<br/>kdf_params: {algo:"pbkdf2", iter:600000} }
+    N->>N: Validate session cookie, extract userId
+    N->>DB: UPDATE user SET vault_salt, encrypted_vault_key, auth_key_hash, kdf_params, vault_initialized=true
+    N-->>U: 200 OK -- vault initialized
 
-    Note over U: If Premium: also generate & display recovery key,<br/>wrap VK with recovery key, send recovery_vault_key blob
+    Note over U: If Premium: also generate recovery key,<br/>wrap VK with recovery key, include recovery_vault_key in request
 ```
 
 ---
@@ -135,31 +317,33 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as User (Browser)
-    participant S as Server
+    participant N as Next.js (API Routes)
     participant DB as PostgreSQL
 
-    U->>S: GET /api/vault/unlock (with session cookie)
-    S->>DB: Fetch vault_salt, kdf_params, encrypted_vault_key, auth_key_hash
-    S-->>U: Return vault metadata (all encrypted/hashed, safe to send)
+    U->>N: GET /api/vault/unlock (session cookie)
+    N->>N: Validate session, extract userId
+    N->>DB: SELECT vault_salt, kdf_params, encrypted_vault_key, auth_key_hash FROM user
+    N-->>U: Return vault metadata (all encrypted/hashed, safe to send)
 
     U->>U: Enter master password
-    U->>U: Derive MEK from master password + salt (using kdf_params)
+    U->>U: Derive MEK from master password + salt (per kdf_params)
     U->>U: Derive Auth Key = HKDF(MEK, "lockr-auth")
-    U->>U: Compare hash(Auth Key) with stored auth_key_hash
+    U->>U: Compare SHA-256(Auth Key) with received auth_key_hash
 
-    alt Auth Key matches
-        U->>U: Unwrap VK from encrypted_vault_key using MEK
-        U->>U: Store VK in memory (React Context)
-        U->>S: GET /api/vault/entries (with session cookie)
-        S->>DB: Fetch encrypted blobs for user
-        S-->>U: Return array of encrypted blobs
+    alt Auth Key hash matches
+        U->>U: Unwrap VK from encrypted_vault_key using MEK (AES-KW)
+        U->>U: Store VK in memory (Zustand store / module variable)
+        U->>N: GET /api/vault/entries (session cookie)
+        N->>N: Validate session, extract userId
+        N->>DB: SELECT id, encrypted_blob, createdAt, updatedAt FROM entries WHERE userId = $1
+        N-->>U: Return array of encrypted blobs
         U->>U: Decrypt each blob with VK (AES-256-GCM)
         U->>U: Display plaintext entries in UI
-    else Auth Key does not match
+    else Auth Key hash does not match
         U->>U: Show "Wrong master password" error
     end
 
-    Note over U: On lock / logout: zero VK from memory
+    Note over U: On lock / logout: zero VK from memory,<br/>clear Zustand store
 ```
 
 ---
@@ -169,19 +353,21 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as User (Browser)
-    participant S as Server
+    participant N as Next.js (API Routes)
     participant DB as PostgreSQL
 
     U->>U: Fill form: service name, username, password, notes, category
     U->>U: Build JSON: { serviceName, username, password, notes, category }
-    U->>U: Encrypt JSON blob with VK (AES-256-GCM, random IV)
+    U->>U: Generate random 12-byte IV via crypto.getRandomValues
+    U->>U: Encrypt JSON blob with VK using AES-256-GCM
     Note right of U: Result: iv:ciphertext:authTag (base64)
 
-    U->>S: POST /api/vault/entries (with session cookie)
+    U->>N: POST /api/vault/entries (session cookie)
     Note right of U: { encrypted_blob: "iv:ciphertext:authTag" }
-    S->>S: Validate session, confirm user identity
-    S->>DB: INSERT into entries (user_id, encrypted_blob)
-    S-->>U: 201 Created
+    N->>N: Validate session cookie, extract userId
+    N->>N: Check entry count against tier limit (free = 50)
+    N->>DB: INSERT INTO entries (id, userId, encrypted_blob)
+    N-->>U: 201 Created { id }
 ```
 
 ---
@@ -191,21 +377,22 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as User (Browser)
-    participant S as Server
+    participant N as Next.js (API Routes)
 
     U->>U: Enter current master password
-    U->>U: Derive old MEK, unwrap VK (verify Auth Key first)
+    U->>U: Derive old MEK, verify Auth Key hash, unwrap VK
 
     U->>U: Enter new master password
-    U->>U: Generate new salt (optional, can reuse)
-    U->>U: Derive new MEK from new password + salt
+    U->>U: Generate new salt (32 bytes)
+    U->>U: Derive new MEK from new password + new salt
     U->>U: Derive new Auth Key = HKDF(new MEK, "lockr-auth")
     U->>U: Re-wrap VK with new MEK (AES-KW)
 
-    U->>S: POST /api/vault/rotate-key
-    Note right of U: { encrypted_vault_key: new wrapped VK,<br/>auth_key_hash: hash(new Auth Key),<br/>kdf_params, vault_salt }
-    S->>S: Validate session
-    S-->>U: 200 OK
+    U->>N: POST /api/vault/rotate-key (session cookie)
+    Note right of U: { vault_salt, encrypted_vault_key,<br/>auth_key_hash, kdf_params }
+    N->>N: Validate session
+    N->>N: Update user record atomically (transaction)
+    N-->>U: 200 OK
 
     Note over U: Zero entries re-encrypted.<br/>VK is unchanged. Only the wrapping changed.
 ```
@@ -217,26 +404,30 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as User (Browser)
-    participant S as Server
-    participant Pay as Payment Provider
+    participant N as Next.js (API Routes)
+    participant S as Stripe
 
-    U->>Pay: Subscribe to Premium
-    Pay-->>S: Webhook: user upgraded
-    S->>S: Set user.tier = "premium"
+    U->>S: Checkout session (Stripe hosted page)
+    S-->>N: POST /api/stripe/webhook (subscription.created)
+    N->>N: Verify Stripe signature
+    N->>N: UPDATE user SET tier = 'premium'
 
     Note over U: Next time user unlocks vault
+    U->>N: GET /api/vault/unlock (session cookie)
+    N-->>U: vault metadata + tier = "premium"
+
     U->>U: Enter master password
     U->>U: Derive old MEK (PBKDF2), unwrap VK
 
     U->>U: Re-derive MEK with Argon2id (new KDF)
-    U->>U: Derive new Auth Key
+    U->>U: Derive new Auth Key from new MEK
     U->>U: Re-wrap VK with new MEK
-    U->>U: Generate Recovery Key (random 256-bit, display as base58)
+    U->>U: Generate Recovery Key (random 256-bit, display as base58 string)
     U->>U: Wrap VK with Recovery Key
 
-    U->>S: POST /api/vault/upgrade
-    Note right of U: { encrypted_vault_key, recovery_vault_key,<br/>auth_key_hash, kdf_params }
-    S-->>U: 200 OK
+    U->>N: POST /api/vault/upgrade (session cookie)
+    Note right of U: { encrypted_vault_key, recovery_vault_key,<br/>auth_key_hash, kdf_params:{algo:"argon2id",...} }
+    N-->>U: 200 OK
 
     Note over U: Zero entries re-encrypted.<br/>User writes down recovery key.
 ```
@@ -275,10 +466,10 @@ sequenceDiagram
 |---------|:----:|:-------:|
 | Password generator | Basic | Advanced (passphrase, rules) |
 | Built-in TOTP authenticator | -- | Yes |
-| Browser extension | Yes | Yes |
+| Browser extension (future) | Yes | Yes |
 | Active sessions / devices | 2 | Unlimited |
-| Autofill | Yes | Yes |
-| Secure sharing (one-to-one with another Lockr user) | -- | 5 active shares |
+| Autofill (future) | Yes | Yes |
+| Secure sharing (one-to-one, future) | -- | 5 active shares |
 | Import from other password managers | Yes | Yes |
 | Export vault (encrypted backup) | Yes | Yes |
 
@@ -313,13 +504,11 @@ This is the zero-knowledge guarantee.
 | Master password | **No** | **Never sent** |
 | Vault salt | Yes | Yes (not secret, per-user randomness) |
 | KDF parameters | Yes | Yes (not secret, algorithm config) |
-| Auth Key hash | Yes | Yes (used for verification, cannot reverse to MEK) |
+| Auth Key hash | Yes | Yes (verification only, cannot reverse to MEK) |
 | Wrapped Vault Key | Yes | No (encrypted with MEK) |
 | Recovery Vault Key blob | Yes | No (encrypted with recovery key) |
 | Encrypted entry blobs | Yes | No (encrypted with VK) |
 | Entry metadata (service name, username, notes) | **No** (inside encrypted blob) | No |
-| Public key (for future sharing) | Yes | Yes (public by design) |
-| Wrapped private key | Yes | No (encrypted with MEK) |
 
 ---
 
@@ -327,14 +516,22 @@ This is the zero-knowledge guarantee.
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui |
+| Framework | Next.js 15 (App Router) -- single deployment for UI + API |
+| UI | React 19, TypeScript (strict), Tailwind CSS v4, shadcn/ui, Radix |
+| Forms | react-hook-form + zod |
+| Data fetching | TanStack Query (React Query) |
+| Client state (key store) | Zustand (in-memory only, never persisted) |
 | Client-side crypto | Web Crypto API (SubtleCrypto) -- native, no polyfills |
-| Premium KDF | Argon2id via WASM (hash-wasm) |
-| Authentication | better-auth (session-based, secure cookies) |
-| Database | PostgreSQL (via Drizzle ORM) |
-| Email | Resend |
-| Deployment | Vercel (frontend) + managed PostgreSQL |
-| Payments | Stripe (future) |
+| Premium KDF | Argon2id via WASM (hash-wasm), dynamically imported |
+| Authentication | better-auth (session-based, secure httpOnly cookies) |
+| Database | PostgreSQL on Neon (serverless, connection pooling) |
+| ORM | Drizzle ORM + Drizzle Kit (migrations) |
+| Validation | zod (shared between client and API routes) |
+| Email | Resend + React Email templates |
+| Payments | Stripe (Checkout, Customer Portal, Webhooks) |
+| Hosting | Vercel (single deployment) |
+| Monitoring | Sentry (errors), PostHog (privacy-friendly analytics) |
+| Testing | Vitest (unit/crypto), Playwright (E2E) |
 
 ---
 
@@ -345,5 +542,7 @@ This is the zero-knowledge guarantee.
 3. **Per-user salt** -- identical master passwords produce different keys for different users
 4. **Authenticated encryption** -- AES-256-GCM provides both confidentiality and integrity (tamper detection)
 5. **Key hierarchy** -- master password change is O(1), not O(n) entries
-6. **Memory-only key storage** -- VK and MEK live in JavaScript memory, not localStorage, not cookies, not IndexedDB
+6. **Memory-only key storage** -- VK and MEK live in JavaScript memory (Zustand store), never in localStorage, cookies, or IndexedDB
 7. **Forward secrecy on lock** -- when the vault is locked, key material is zeroed; re-entry of master password is required to decrypt again
+8. **Server-side session validation** -- API routes never trust client-sent userId; identity is always extracted from the validated session cookie
+9. **Tier-enforced limits** -- entry count limits are enforced server-side, not client-side
