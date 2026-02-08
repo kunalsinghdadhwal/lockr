@@ -179,9 +179,9 @@ erDiagram
         text role
         text tier "free | premium"
         bytea vault_salt "per-user, 32 bytes"
-        text encrypted_vault_key "VK wrapped with MEK"
-        text recovery_vault_key "VK wrapped with recovery key (premium)"
-        text auth_key_hash "hash of derived Auth Key"
+        bytea encrypted_vault_key "VK wrapped with MEK"
+        bytea recovery_vault_key "VK wrapped with recovery key (premium)"
+        text auth_key_hash "SHA-256 hash of derived Auth Key (hex)"
         jsonb kdf_params "algo, iterations, memory, parallelism"
         boolean vault_initialized "false until first setup"
         timestamp createdAt
@@ -214,7 +214,7 @@ erDiagram
     entries {
         uuid id PK
         text userId FK
-        text encrypted_blob "iv:ciphertext:authTag (base64)"
+        bytea encrypted_blob "packed binary: IV (12B) | ciphertext | auth tag (16B)"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -235,6 +235,22 @@ erDiagram
 ```
 
 **What changed from the current schema:** the `passwords` table (with plaintext `username`, `serviceName`, `notes` columns) is replaced by `entries` with a single opaque `encrypted_blob` column. All metadata lives inside the encrypted blob -- the server cannot read any of it.
+
+### Storage Encoding
+
+All binary data (`vault_salt`, `encrypted_vault_key`, `recovery_vault_key`, `encrypted_blob`) is stored as PostgreSQL `BYTEA` -- raw bytes, no encoding overhead on disk. The `auth_key_hash` is stored as `TEXT` (hex-encoded SHA-256 hash) since it is used for string comparison on the server.
+
+For API transport (JSON responses/requests), binary fields are base64-encoded. The base64 overhead (33%) exists only in transit, not at rest.
+
+**Encrypted blob binary layout** (no delimiters, fixed-position fields):
+
+```
+| IV (12 bytes) | Ciphertext (variable) + Auth Tag (16 bytes, appended by Web Crypto) |
+|---------------|----------------------------------------------------------------------|
+| Fixed offset  | crypto.subtle.encrypt output (ciphertext + tag concatenated)         |
+```
+
+On decrypt, slice the first 12 bytes as IV, pass the remainder to `crypto.subtle.decrypt` which expects ciphertext + appended auth tag.
 
 ---
 
@@ -302,8 +318,9 @@ sequenceDiagram
     U->>U: Wrap VK with MEK using AES-KW
 
     U->>N: POST /api/vault/setup (session cookie)
-    Note right of U: { vault_salt, encrypted_vault_key,<br/>auth_key_hash: SHA-256(Auth Key),<br/>kdf_params: {algo:"pbkdf2", iter:600000} }
+    Note right of U: { vault_salt: base64, encrypted_vault_key: base64,<br/>auth_key_hash: hex(SHA-256(Auth Key)),<br/>kdf_params: {algo:"pbkdf2", iter:600000} }
     N->>N: Validate session cookie, extract userId
+    N->>N: Decode base64 fields to Buffer for BYTEA storage
     N->>DB: UPDATE user SET vault_salt, encrypted_vault_key, auth_key_hash, kdf_params, vault_initialized=true
     N-->>U: 200 OK -- vault initialized
 
@@ -323,7 +340,8 @@ sequenceDiagram
     U->>N: GET /api/vault/unlock (session cookie)
     N->>N: Validate session, extract userId
     N->>DB: SELECT vault_salt, kdf_params, encrypted_vault_key, auth_key_hash FROM user
-    N-->>U: Return vault metadata (all encrypted/hashed, safe to send)
+    N->>N: Encode BYTEA fields to base64 for JSON response
+    N-->>U: Return vault metadata (salt + wrapped VK as base64, auth hash as hex)
 
     U->>U: Enter master password
     U->>U: Derive MEK from master password + salt (per kdf_params)
@@ -336,7 +354,8 @@ sequenceDiagram
         U->>N: GET /api/vault/entries (session cookie)
         N->>N: Validate session, extract userId
         N->>DB: SELECT id, encrypted_blob, createdAt, updatedAt FROM entries WHERE userId = $1
-        N-->>U: Return array of encrypted blobs
+        N->>N: Encode each BYTEA blob to base64 for JSON response
+        N-->>U: Return array of { id, encrypted_blob: base64, createdAt, updatedAt }
         U->>U: Decrypt each blob with VK (AES-256-GCM)
         U->>U: Display plaintext entries in UI
     else Auth Key hash does not match
@@ -360,12 +379,14 @@ sequenceDiagram
     U->>U: Build JSON: { serviceName, username, password, notes, category }
     U->>U: Generate random 12-byte IV via crypto.getRandomValues
     U->>U: Encrypt JSON blob with VK using AES-256-GCM
-    Note right of U: Result: iv:ciphertext:authTag (base64)
+    U->>U: Pack into binary: IV (12B) | ciphertext | auth tag (16B)
+    U->>U: Encode packed blob as base64 for JSON transport
 
     U->>N: POST /api/vault/entries (session cookie)
-    Note right of U: { encrypted_blob: "iv:ciphertext:authTag" }
+    Note right of U: { encrypted_blob: "base64(packed binary)" }
     N->>N: Validate session cookie, extract userId
     N->>N: Check entry count against tier limit (free = 50)
+    N->>N: Decode base64 to Buffer for BYTEA storage
     N->>DB: INSERT INTO entries (id, userId, encrypted_blob)
     N-->>U: 201 Created { id }
 ```
@@ -389,7 +410,7 @@ sequenceDiagram
     U->>U: Re-wrap VK with new MEK (AES-KW)
 
     U->>N: POST /api/vault/rotate-key (session cookie)
-    Note right of U: { vault_salt, encrypted_vault_key,<br/>auth_key_hash, kdf_params }
+    Note right of U: { vault_salt: base64, encrypted_vault_key: base64,<br/>auth_key_hash: hex, kdf_params }
     N->>N: Validate session
     N->>N: Update user record atomically (transaction)
     N-->>U: 200 OK
@@ -426,7 +447,7 @@ sequenceDiagram
     U->>U: Wrap VK with Recovery Key
 
     U->>N: POST /api/vault/upgrade (session cookie)
-    Note right of U: { encrypted_vault_key, recovery_vault_key,<br/>auth_key_hash, kdf_params:{algo:"argon2id",...} }
+    Note right of U: { encrypted_vault_key: base64, recovery_vault_key: base64,<br/>auth_key_hash: hex, kdf_params:{algo:"argon2id",...} }
     N-->>U: 200 OK
 
     Note over U: Zero entries re-encrypted.<br/>User writes down recovery key.
