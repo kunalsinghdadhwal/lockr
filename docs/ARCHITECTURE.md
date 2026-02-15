@@ -33,7 +33,7 @@ graph TB
         subgraph API ["API Routes (/api/*)"]
             AV["/api/vault/*<br/>setup, unlock, entries,<br/>rotate-key, upgrade"]
             AA["/api/auth/[...all]<br/>better-auth handler"]
-            AW["/api/auth/[...all]<br/>includes Dodo Payments<br/>webhook + checkout"]
+            AW["/api/auth/[...all]<br/>includes Polar<br/>webhook + checkout"]
         end
 
         subgraph SVC ["Service Layer (framework-agnostic)"]
@@ -107,12 +107,12 @@ src/
         entries/[id]/route.ts     -- PUT: update entry, DELETE: remove entry
         rotate-key/route.ts       -- POST: re-wrap VK on master password change
         upgrade/route.ts          -- POST: swap KDF, add recovery key blob
-      # Dodo Payments webhooks + checkout handled via better-auth plugin
+      # Polar webhooks + checkout handled via better-auth plugin
       # in /api/auth/[...all] -- no separate route needed
 
   services/
     vault.service.ts              -- vault CRUD logic (framework-agnostic)
-    payment.service.ts            -- tier management, Dodo Payments onPayload handler
+    payment.service.ts            -- tier management, Polar onPayload handler
 
   crypto/                         -- client-side only, imported by dashboard
     kdf.ts                        -- PBKDF2 + Argon2id wrappers (Web Crypto API)
@@ -160,7 +160,7 @@ All routes are Next.js API route handlers under `src/app/api/`.
 | `DELETE` | `/api/vault/entries/[id]` | Yes | Delete an entry |
 | `POST` | `/api/vault/rotate-key` | Yes | Master password change: store new wrapped VK + auth key hash |
 | `POST` | `/api/vault/upgrade` | Yes | Tier upgrade: swap KDF params, add recovery vault key blob |
-| `POST` | `/api/auth/[...all]` (Dodo webhook path) | No (Dodo signature) | Subscription created, updated, canceled events (handled by better-auth Dodo Payments plugin) |
+| `POST` | `/api/auth/[...all]` (Polar webhook path) | No (Polar signature) | Subscription created, updated, canceled events (handled by better-auth Polar plugin) |
 
 Session validation on "Auth Required" routes: middleware extracts the session cookie, verifies it against the `session` table, and injects the authenticated `userId` into the request. The API route handler never trusts a client-sent `userId` -- it always uses the session-verified identity.
 
@@ -426,11 +426,11 @@ sequenceDiagram
 sequenceDiagram
     participant U as User (Browser)
     participant N as Next.js (API Routes)
-    participant D as Dodo Payments
+    participant D as Polar
 
-    U->>D: Checkout session (Dodo hosted page via authClient.dodopayments.checkoutSession)
+    U->>D: Checkout session (Polar hosted page via authClient.polar.checkoutSession)
     D-->>N: POST /api/auth/[...all] (webhook: subscription.created)
-    N->>N: Verify Dodo webhook signature (better-auth plugin)
+    N->>N: Verify Polar webhook signature (better-auth plugin)
     N->>N: UPDATE user SET tier = 'premium'
 
     Note over U: Next time user unlocks vault
@@ -550,7 +550,7 @@ This is the zero-knowledge guarantee.
 | ORM | Drizzle ORM + Drizzle Kit (migrations) |
 | Validation | zod (shared between client and API routes) |
 | Email | Resend + React Email templates |
-| Payments | Dodo Payments (better-auth plugin -- checkout, customer portal, webhooks, tax compliance) |
+| Payments | Polar (better-auth plugin -- checkout, customer portal, webhooks, tax compliance) |
 | Hosting | Vercel (single deployment) |
 | Monitoring | Sentry (errors), PostHog (privacy-friendly analytics) |
 | Testing | Vitest (unit/crypto), Playwright (E2E) |
