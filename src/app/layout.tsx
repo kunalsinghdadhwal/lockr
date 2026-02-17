@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Inter } from "next/font/google";
 import ThemeProvider from "@/utils/ThemeProvider";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 
 export const metadata: Metadata = {
@@ -19,7 +20,9 @@ export default async function RootLayout({
     <html lang="en">
       <body className={`bg-white dark:bg-black ${inter.className}`}>
         <ThemeProvider  >
-          <main>{children}</main>
+          <NuqsAdapter>
+            <main>{children}</main>
+          </NuqsAdapter>
         </ThemeProvider>
         <Toaster />
       </body>
