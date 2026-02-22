@@ -1,4 +1,4 @@
-import { object, string } from "zod";
+import { object, string, z } from "zod";
 
 const getPasswordSchema = (type: "password" | "confirmPassword") =>
   string({ required_error: `${type} is required` }).min(
@@ -41,4 +41,42 @@ export const resetPasswordSchema = object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+});
+
+// --- Vault schemas ---
+
+export const kdfParamsSchema = z.object({
+  algo: z.enum(["pbkdf2", "argon2id"]),
+  iterations: z.number().int().positive().optional(),
+  memory: z.number().int().positive().optional(),
+  parallelism: z.number().int().positive().optional(),
+});
+
+export const vaultSetupSchema = z.object({
+  vault_salt: z.string().min(1),
+  encrypted_vault_key: z.string().min(1),
+  auth_key_hash: z.string().length(64),
+  kdf_params: kdfParamsSchema,
+});
+
+export const createEntrySchema = z.object({
+  encrypted_blob: z.string().min(1),
+});
+
+export const updateEntrySchema = z.object({
+  encrypted_blob: z.string().min(1),
+});
+
+export const rotateKeySchema = z.object({
+  vault_salt: z.string().min(1),
+  encrypted_vault_key: z.string().min(1),
+  auth_key_hash: z.string().length(64),
+  kdf_params: kdfParamsSchema,
+});
+
+export const upgradeVaultSchema = z.object({
+  encrypted_vault_key: z.string().min(1),
+  recovery_vault_key: z.string().optional(),
+  auth_key_hash: z.string().length(64),
+  kdf_params: kdfParamsSchema,
 });
