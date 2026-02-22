@@ -24,7 +24,11 @@ export async function initializeVault(
     .from(user)
     .where(eq(user.id, userId));
 
-  if (existing?.vaultInitialized) {
+  if (!existing) {
+    throw new Error("User not found");
+  }
+
+  if (existing.vaultInitialized) {
     throw new Error("Vault already initialized");
   }
 
@@ -91,6 +95,10 @@ export async function createEntry(userId: string, encryptedBlob: string) {
     .select({ tier: user.tier })
     .from(user)
     .where(eq(user.id, userId));
+
+  if (!tierRow) {
+    throw new Error("User not found");
+  }
 
   const [countRow] = await db
     .select({ count: count() })
@@ -176,15 +184,15 @@ export async function upgradeVault(
     kdf_params: object;
   }
 ) {
-  const updateData: Record<string, unknown> = {
-    encryptedVaultKey: base64ToBuffer(data.encrypted_vault_key),
-    authKeyHash: data.auth_key_hash,
-    kdfParams: data.kdf_params,
-  };
-
-  if (data.recovery_vault_key) {
-    updateData.recoveryVaultKey = base64ToBuffer(data.recovery_vault_key);
-  }
-
-  await db.update(user).set(updateData).where(eq(user.id, userId));
+  await db
+    .update(user)
+    .set({
+      encryptedVaultKey: base64ToBuffer(data.encrypted_vault_key),
+      authKeyHash: data.auth_key_hash,
+      kdfParams: data.kdf_params,
+      ...(data.recovery_vault_key && {
+        recoveryVaultKey: base64ToBuffer(data.recovery_vault_key),
+      }),
+    })
+    .where(eq(user.id, userId));
 }

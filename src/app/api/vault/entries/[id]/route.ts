@@ -1,33 +1,35 @@
 import { auth } from "@/lib/auth";
 import { updateEntrySchema } from "@/lib/zod";
 import { updateEntry, deleteEntry } from "@/services/vault.service";
-import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 export async function PUT(
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const userId = session.user.id;
-  const { id } = await params;
-
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = session.user.id;
+    const { id } = await params;
+
     const body = await request.json();
     const data = updateEntrySchema.parse(body);
     await updateEntry(userId, id, data.encrypted_blob);
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   } catch (e) {
     if (e instanceof ZodError) {
-      return NextResponse.json({ error: e.errors }, { status: 400 });
+      return Response.json({ error: e.errors }, { status: 400 });
     }
     if (e instanceof Error && e.message === "Entry not found") {
-      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+      return Response.json({ error: "Entry not found" }, { status: 404 });
     }
-    return NextResponse.json(
+    if (e instanceof Error && e.message === "User not found") {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+    return Response.json(
       { error: "Internal server error" },
       { status: 500 }
     );
@@ -35,24 +37,27 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const userId = session.user.id;
-  const { id } = await params;
-
   try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = session.user.id;
+    const { id } = await params;
+
     await deleteEntry(userId, id);
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   } catch (e) {
     if (e instanceof Error && e.message === "Entry not found") {
-      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+      return Response.json({ error: "Entry not found" }, { status: 404 });
     }
-    return NextResponse.json(
+    if (e instanceof Error && e.message === "User not found") {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+    return Response.json(
       { error: "Internal server error" },
       { status: 500 }
     );
