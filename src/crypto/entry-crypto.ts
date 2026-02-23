@@ -18,7 +18,7 @@ export interface VaultEntry {
 export async function encryptEntry(
   entry: VaultEntry,
   vaultKey: CryptoKey,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
   const plaintext = new TextEncoder().encode(JSON.stringify(entry));
 
@@ -41,7 +41,7 @@ export async function encryptEntry(
  * (AES-GCM auth tag verification failure).
  */
 export async function decryptEntry(
-  encryptedBlob: Uint8Array,
+  encryptedBlob: Uint8Array<ArrayBuffer>,
   vaultKey: CryptoKey,
 ): Promise<VaultEntry> {
   const iv = encryptedBlob.slice(0, IV_LENGTH);
@@ -65,7 +65,7 @@ export async function decryptEntry(
  * On disk (PostgreSQL BYTEA) the data is stored as raw bytes -- base64
  * overhead exists only in transit.
  */
-export function toBase64(bytes: Uint8Array): string {
+export function toBase64(bytes: Uint8Array<ArrayBuffer>): string {
   // Process in 8KB chunks to avoid stack overflow on large blobs
   // while keeping O(n) concatenation via array join
   const chunks: string[] = [];
@@ -80,7 +80,7 @@ export function toBase64(bytes: Uint8Array): string {
 /**
  * Decode a base64 string back to a Uint8Array.
  */
-export function fromBase64(base64: string): Uint8Array {
+export function fromBase64(base64: string): Uint8Array<ArrayBuffer> {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {

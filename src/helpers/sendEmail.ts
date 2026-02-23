@@ -1,4 +1,4 @@
-import { resend } from "@/lib/resend";
+import { getResend } from "@/lib/resend";
 import VerificationEmail from "../../emails/VerificationEmail";
 import { ApiResponse } from "@/types/ApiResponse";
 import ResetPasswordEmail from "../../emails/ResetPasswordEmail";
@@ -12,7 +12,7 @@ export async function sendEmail(
 ): Promise<ApiResponse> {
   try {
     if (category == "verify") {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: "onboarding@resend.dev",
         to: email,
         subject: subject,
@@ -23,7 +23,7 @@ export async function sendEmail(
         }),
       });
     } else if (category == "reset") {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: "onboarding@resend.dev",
         to: email,
         subject: subject,

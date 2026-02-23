@@ -107,5 +107,5 @@ async function deriveWithArgon2id(
     outputType: "binary",
   });
 
-  return result;
+  return new Uint8Array(result) as Uint8Array<ArrayBuffer>;
 }

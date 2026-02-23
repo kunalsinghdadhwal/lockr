@@ -34,7 +34,7 @@ export async function generateRecoveryKey(): Promise<{
 export async function wrapVKWithRecoveryKey(
   vaultKey: CryptoKey,
   recoveryWrappingKey: CryptoKey,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const wrapped = await crypto.subtle.wrapKey(
     "raw",
     vaultKey,
@@ -51,7 +51,7 @@ export async function wrapVKWithRecoveryKey(
  * setup time. Throws if the recovery key is incorrect (AES-KW integrity check).
  */
 export async function unwrapVKWithRecoveryKey(
-  wrappedVK: Uint8Array,
+  wrappedVK: Uint8Array<ArrayBuffer>,
   recoveryKeyInput: string,
 ): Promise<CryptoKey> {
   // Strip dashes and decode base58 back to 32 bytes
@@ -84,7 +84,7 @@ export async function unwrapVKWithRecoveryKey(
 // ---------------------------------------------------------------------------
 
 async function importRecoveryKeyBytes(
-  bytes: Uint8Array,
+  bytes: Uint8Array<ArrayBuffer>,
 ): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     "raw",
@@ -99,7 +99,7 @@ async function importRecoveryKeyBytes(
 // Base58 encode/decode (no external dependency)
 // ---------------------------------------------------------------------------
 
-function base58Encode(input: Uint8Array): string {
+function base58Encode(input: Uint8Array<ArrayBuffer>): string {
   if (input.length === 0) return "";
 
   // Count leading zeros
@@ -125,7 +125,7 @@ function base58Encode(input: Uint8Array): string {
   return BASE58_ALPHABET[0].repeat(zeros) + encoded;
 }
 
-function base58Decode(input: string): Uint8Array {
+function base58Decode(input: string): Uint8Array<ArrayBuffer> {
   if (input.length === 0) return new Uint8Array(0);
 
   // Count leading '1's (base58 representation of zero bytes)

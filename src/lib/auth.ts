@@ -44,7 +44,7 @@ export const auth = betterAuth({
         user.email,
         user.name,
         token,
-        "Sigma Boyz Reset Password Link",
+        "Lockr Reset Password Link",
         "reset"
       );
     },
@@ -57,16 +57,15 @@ export const auth = betterAuth({
         user.email,
         user.name,
         token,
-        "Sigma Boyz Verification Code",
+        "Lockr Verification Code",
         "verify"
       );
     },
   },
   advanced: {
-    cookiePrefix: "sigma-boyz",
+    cookiePrefix: "lockr",
     useSecureCookies: true,
   },
 } satisfies BetterAuthOptions);
 
 export type Session = typeof auth.$Infer.Session;
-export const ctx = await auth.$context;
