@@ -4,7 +4,12 @@ import { betterAuth, BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, openAPI } from "better-auth/plugins";
 import { polar, checkout, portal } from "@polar-sh/better-auth";
+import { Polar } from "@polar-sh/sdk";
 import * as schema from "@/db/schema";
+
+const polarClient = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -35,7 +40,8 @@ export const auth = betterAuth({
     openAPI(),
     admin(),
     polar({
-      accessToken: process.env.POLAR_ACCESS_TOKEN!,
+      client: polarClient,
+      createCustomerOnSignUp: true,
       use: [
         checkout({
           products: [
