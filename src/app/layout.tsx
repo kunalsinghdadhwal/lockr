@@ -7,8 +7,11 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 
 export const metadata: Metadata = {
-  title: "Sigma Boyz",
-  description: "Sigma Boyz web programming project",
+  title: {
+    default: "Lockr",
+    template: "%s | Lockr",
+  },
+  description: "End-to-end encrypted password manager. Your credentials never leave your browser unencrypted.",
 };
 const inter = Inter({ subsets: ["latin"] });
 export default async function RootLayout({

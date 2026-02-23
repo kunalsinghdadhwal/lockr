@@ -94,7 +94,6 @@ export default function SignUp() {
           router.push("/sign-in");
         },
         onError: (ctx) => {
-          console.log("error", ctx);
           toast({
             title: "Something went wrong",
             description: ctx.error.message ?? "Something went wrong.",
