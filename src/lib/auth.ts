@@ -3,6 +3,7 @@ import { sendEmail } from "@/helpers/sendEmail";
 import { betterAuth, BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, openAPI } from "better-auth/plugins";
+import { polar, checkout, portal } from "@polar-sh/better-auth";
 import * as schema from "@/db/schema";
 
 export const auth = betterAuth({
@@ -30,7 +31,23 @@ export const auth = betterAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
     },
   },
-  plugins: [openAPI(), admin()],
+  plugins: [
+    openAPI(),
+    admin(),
+    polar({
+      accessToken: process.env.POLAR_ACCESS_TOKEN!,
+      use: [
+        checkout({
+          products: [
+            { productId: process.env.POLAR_PREMIUM_PRODUCT_ID!, slug: "premium" },
+          ],
+          successUrl: "/dashboard?upgrade=success",
+          authenticatedUsersOnly: true,
+        }),
+        portal(),
+      ],
+    }),
+  ],
   user: {
     deleteUser: {
       enabled: true,
