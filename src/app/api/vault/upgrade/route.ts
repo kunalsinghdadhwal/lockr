@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return Response.json({ success: true });
   } catch (e) {
     if (e instanceof ZodError) {
-      return Response.json({ error: e.errors }, { status: 400 });
+      return Response.json({ error: e.issues }, { status: 400 });
     }
     return Response.json(
       { error: "Internal server error" },

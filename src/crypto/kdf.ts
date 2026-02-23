@@ -27,9 +27,9 @@ export { PBKDF2_DEFAULT, ARGON2ID_DEFAULT };
  */
 export async function deriveMEKBits(
   password: string,
-  salt: Uint8Array,
+  salt: Uint8Array<ArrayBuffer>,
   params: KdfParams,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   if (params.algo === "argon2id") {
     return deriveWithArgon2id(password, salt, params);
   }
@@ -40,7 +40,7 @@ export async function deriveMEKBits(
  * Import raw MEK bytes as an AES-KW CryptoKey for wrapping/unwrapping the Vault Key.
  */
 export async function importMEKForWrapping(
-  mekBits: Uint8Array,
+  mekBits: Uint8Array<ArrayBuffer>,
 ): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     "raw",
@@ -54,7 +54,7 @@ export async function importMEKForWrapping(
 /**
  * Generate a cryptographically random 32-byte salt.
  */
-export function generateSalt(): Uint8Array {
+export function generateSalt(): Uint8Array<ArrayBuffer> {
   return crypto.getRandomValues(new Uint8Array(32));
 }
 
@@ -64,9 +64,9 @@ export function generateSalt(): Uint8Array {
 
 async function deriveWithPBKDF2(
   password: string,
-  salt: Uint8Array,
+  salt: Uint8Array<ArrayBuffer>,
   params: KdfParams,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
@@ -92,9 +92,9 @@ async function deriveWithPBKDF2(
 
 async function deriveWithArgon2id(
   password: string,
-  salt: Uint8Array,
+  salt: Uint8Array<ArrayBuffer>,
   params: KdfParams,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const { argon2id } = await import("hash-wasm");
 
   const result = await argon2id({

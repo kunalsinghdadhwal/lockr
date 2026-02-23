@@ -21,7 +21,7 @@ export async function generateVaultKey(): Promise<CryptoKey> {
 export async function wrapVaultKey(
   vaultKey: CryptoKey,
   mekWrappingKey: CryptoKey,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const wrapped = await crypto.subtle.wrapKey(
     "raw",
     vaultKey,
@@ -38,7 +38,7 @@ export async function wrapVaultKey(
  * Throws if the wrapping key is incorrect (AES-KW integrity check).
  */
 export async function unwrapVaultKey(
-  wrappedVK: Uint8Array,
+  wrappedVK: Uint8Array<ArrayBuffer>,
   mekWrappingKey: CryptoKey,
 ): Promise<CryptoKey> {
   return crypto.subtle.unwrapKey(

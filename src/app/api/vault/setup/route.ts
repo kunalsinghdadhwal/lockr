@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return Response.json({ success: true });
   } catch (e) {
     if (e instanceof ZodError) {
-      return Response.json({ error: e.errors }, { status: 400 });
+      return Response.json({ error: e.issues }, { status: 400 });
     }
     if (e instanceof Error && e.message === "Vault already initialized") {
       return Response.json({ error: e.message }, { status: 409 });

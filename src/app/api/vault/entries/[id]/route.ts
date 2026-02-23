@@ -21,7 +21,7 @@ export async function PUT(
     return Response.json({ success: true });
   } catch (e) {
     if (e instanceof ZodError) {
-      return Response.json({ error: e.errors }, { status: 400 });
+      return Response.json({ error: e.issues }, { status: 400 });
     }
     if (e instanceof Error && e.message === "Entry not found") {
       return Response.json({ error: "Entry not found" }, { status: 404 });

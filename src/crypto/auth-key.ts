@@ -8,7 +8,7 @@ const AUTH_KEY_CONTEXT = "lockr-auth";
  * The server never receives the MEK or the raw auth key.
  */
 export async function deriveAuthKeyHash(
-  mekBits: Uint8Array,
+  mekBits: Uint8Array<ArrayBuffer>,
 ): Promise<string> {
   // Import MEK bytes as HKDF key material
   const hkdfKey = await crypto.subtle.importKey(

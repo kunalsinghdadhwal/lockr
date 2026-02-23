@@ -10,7 +10,7 @@ const AUTH_ROUTES = new Set([
   "/email-verified",
 ]);
 
-export default async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const isAuthRoute = AUTH_ROUTES.has(pathname);
   const isProtectedRoute = pathname.startsWith("/dashboard");

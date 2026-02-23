@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     return Response.json(result, { status: 201 });
   } catch (e) {
     if (e instanceof ZodError) {
-      return Response.json({ error: e.errors }, { status: 400 });
+      return Response.json({ error: e.issues }, { status: 400 });
     }
     if (e instanceof Error && e.message === "Entry limit reached") {
       return Response.json(
