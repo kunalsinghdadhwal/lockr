@@ -16,6 +16,8 @@ import {
   AlertCircle,
   Loader2,
   Pencil,
+  Zap,
+  Crown,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -72,8 +74,10 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useSearchParams } from "next/navigation";
 import type { VaultEntry } from "@/crypto/entry-crypto";
 import { useVault, type DecryptedItem } from "@/hooks/use-vault";
+import { authClient } from "@/lib/auth-client";
 
 const categories = [
   { value: "all", label: "All" },
@@ -413,11 +417,33 @@ function EntryDialog({
 
 export default function VaultDashboard() {
   const vault = useVault();
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState("all");
   const [addOpen, setAddOpen] = React.useState(false);
   const [editItem, setEditItem] = React.useState<DecryptedItem | null>(null);
   const [deleteItem, setDeleteItem] = React.useState<DecryptedItem | null>(null);
+  const [upgradeSuccess, setUpgradeSuccess] = React.useState(false);
+  const [checkoutLoading, setCheckoutLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (searchParams.get("upgrade") === "success") {
+      setUpgradeSuccess(true);
+      window.history.replaceState({}, "", "/dashboard");
+    }
+  }, [searchParams]);
+
+  const handleUpgradeCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      // @ts-expect-error -- polar plugin types
+      await authClient.polar.checkout({ slug: "premium" });
+    } catch {
+      vault.setError("Failed to start checkout");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   const filtered = React.useMemo(() => {
     let result = vault.items;
@@ -488,9 +514,16 @@ export default function VaultDashboard() {
           <div className="flex items-center gap-3">
             <Shield className="h-4.5 w-4.5 text-zinc-500" />
             <span className="text-sm font-semibold tracking-tight text-zinc-300">Lockr</span>
-            <Badge variant="outline" className="text-[10px] border-white/[0.06] text-zinc-500 bg-transparent uppercase tracking-widest">
-              {vault.userTier}
-            </Badge>
+            {vault.userTier === "premium" ? (
+              <Badge className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-widest hover:bg-amber-500/10">
+                <Crown className="h-2.5 w-2.5 mr-1" />
+                Premium
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] border-white/[0.06] text-zinc-500 bg-transparent uppercase tracking-widest">
+                Free
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -504,6 +537,22 @@ export default function VaultDashboard() {
                 className={`w-56 h-8 pl-8 text-xs ${INPUT_CLASS}`}
               />
             </div>
+
+            {vault.userTier === "free" && (
+              <Button
+                size="sm"
+                onClick={handleUpgradeCheckout}
+                disabled={checkoutLoading}
+                className="h-8 bg-gradient-to-r from-amber-500/90 to-orange-500/90 text-white hover:from-amber-500 hover:to-orange-500 text-xs font-medium border-0"
+              >
+                {checkoutLoading ? (
+                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                ) : (
+                  <Zap className="mr-1.5 h-3 w-3" />
+                )}
+                Upgrade
+              </Button>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -532,6 +581,16 @@ export default function VaultDashboard() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
+        {upgradeSuccess && (
+          <div className="mb-6 flex items-center gap-2 text-sm text-emerald-400/90 bg-emerald-400/[0.06] rounded-lg px-4 py-3 border border-emerald-400/[0.08]">
+            <Check className="h-3.5 w-3.5 shrink-0" />
+            Welcome to Premium! Your vault now supports unlimited entries, Argon2id encryption, and recovery keys.
+            <button onClick={() => setUpgradeSuccess(false)} className="ml-auto text-emerald-400/50 hover:text-emerald-400">
+              &times;
+            </button>
+          </div>
+        )}
+
         {vault.error && (
           <div className="mb-6 flex items-center gap-2 text-sm text-red-400/90 bg-red-400/[0.06] rounded-lg px-4 py-3 border border-red-400/[0.08]">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />

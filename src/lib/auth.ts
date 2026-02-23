@@ -3,9 +3,10 @@ import { sendEmail } from "@/helpers/sendEmail";
 import { betterAuth, BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, openAPI } from "better-auth/plugins";
-import { polar, checkout, portal } from "@polar-sh/better-auth";
+import { polar, checkout, portal, webhooks } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 import * as schema from "@/db/schema";
+import { upgradeTier } from "@/services/payment.service";
 
 const polarClient = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
@@ -51,6 +52,15 @@ export const auth = betterAuth({
           authenticatedUsersOnly: true,
         }),
         portal(),
+        webhooks({
+          secret: process.env.POLAR_WEBHOOK_SECRET!,
+          onOrderPaid: async (payload) => {
+            const customerId = payload.data?.customer?.externalId;
+            if (customerId) {
+              await upgradeTier(customerId);
+            }
+          },
+        }),
       ],
     }),
   ],
