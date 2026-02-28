@@ -33,6 +33,9 @@ export const user = pgTable("user", {
   authKeyHash: text("auth_key_hash"),
   kdfParams: jsonb("kdf_params"),
   vaultInitialized: boolean("vault_initialized").default(false).notNull(),
+  twoFactorSecret: text("two_factor_secret"),
+  twoFactorBackupCodes: text("two_factor_backup_codes"),
+  twoFactorEnabled: boolean("two_factor_enabled"),
 });
 
 export const session = pgTable("session", {

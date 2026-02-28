@@ -8,306 +8,328 @@ import { signInSchema } from "@/lib/zod";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  Github,
-  GavelIcon as LetterG,
-} from "lucide-react";
-import { useTheme } from "next-themes";
-import { z } from "zod";
+import { AtSignIcon, LockIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
+import type { z } from "zod";
 
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from "@/components/ui/input-group";
+import {
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+	InputOTPSeparator,
+} from "@/components/ui/input-otp";
 import LoadingButton from "@/components/loading-button";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
+type Step = "credentials" | "totp";
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [pendingCredentials, setPendingCredentials] = useState(false);
-  const [pendingGithub, setPendingGithub] = useState(false);
-  const [pendingGoogle, setPendingGoogle] = useState(false);
+export default function SignInPage() {
+	const router = useRouter();
+	const { toast } = useToast();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<z.infer<typeof signInSchema>>({
-    resolver: zodResolver(signInSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
+	const [step, setStep] = useState<Step>("credentials");
+	const [totpCode, setTotpCode] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
+	const [pendingCredentials, setPendingCredentials] = useState(false);
+	const [pendingGithub, setPendingGithub] = useState(false);
+	const [pendingGoogle, setPendingGoogle] = useState(false);
+	const [verifying, setVerifying] = useState(false);
 
-  const handleCredentialsSignIn = async (values: z.infer<typeof signInSchema>) => {
-    await authClient.signIn.email(
-      {
-        email: values.email,
-        password: values.password,
-      },
-      {
-        onRequest: () => {
-          setPendingCredentials(true);
-        },
-        onSuccess: async () => {
-          router.push("/dashboard");
-          router.refresh();
-        },
-        onError: (ctx) => {
-          toast({
-            title: "Something went wrong",
-            description: ctx.error.message ?? "Something went wrong.",
-            variant: "destructive",
-          });
-        },
-      }
-    );
-    setPendingCredentials(false);
-  };
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<z.infer<typeof signInSchema>>({
+		resolver: zodResolver(signInSchema),
+		defaultValues: {
+			email: "",
+			password: "",
+		},
+	});
 
-  const handleSignInWithGithub = async () => {
-    setPendingGithub(true);
-    await authClient.signIn.social({
-      provider: "github",
-      callbackURL: "/dashboard",
-    });
-    setPendingGithub(false);
-  };
+	const handleCredentialsSignIn = async (
+		values: z.infer<typeof signInSchema>,
+	) => {
+		await authClient.signIn.email(
+			{
+				email: values.email,
+				password: values.password,
+			},
+			{
+				onRequest: () => {
+					setPendingCredentials(true);
+				},
+				onSuccess: async (ctx) => {
+					if (ctx.data.twoFactorRedirect) {
+						setStep("totp");
+					} else {
+						router.push("/dashboard");
+						router.refresh();
+					}
+				},
+				onError: (ctx) => {
+					toast({
+						title: "Something went wrong",
+						description: ctx.error.message ?? "Something went wrong.",
+						variant: "destructive",
+					});
+				},
+			},
+		);
+		setPendingCredentials(false);
+	};
 
-  const handleSignInWithGoogle = async () => {
-    setPendingGoogle(true);
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/dashboard",
-    });
-    setPendingGoogle(false);
-  };
+	const handleVerifyTotp = async () => {
+		setVerifying(true);
+		const { error } = await authClient.twoFactor.verifyTotp({
+			code: totpCode,
+		});
+		if (error) {
+			toast({
+				title: "Verification failed",
+				description: error.message ?? "Invalid code. Please try again.",
+				variant: "destructive",
+			});
+		} else {
+			router.push("/dashboard");
+			router.refresh();
+		}
+		setVerifying(false);
+	};
 
-  return (
-    <div className="min-h-screen flex">
-      {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {theme === "dark" ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-sun"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-moon"
-            >
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
-          )}
-        </Button>
-      </div>
+	const handleSignInWithGithub = async () => {
+		setPendingGithub(true);
+		await authClient.signIn.social({
+			provider: "github",
+			callbackURL: "/dashboard",
+		});
+		setPendingGithub(false);
+	};
 
-      {/* Left Side - Form */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-6 bg-background">
-        <Card className="w-full max-w-md border-0 shadow-none bg-transparent">
-          <CardHeader className="space-y-1 px-0">
-            <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-0">
-            <form onSubmit={handleSubmit(handleCredentialsSignIn)} className="space-y-4">
-              {/* Email Field */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="email">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    placeholder="Enter your email"
-                    type="email"
-                    className="pl-10"
-                    {...register("email")}
-                  />
-                </div>
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email.message}</p>
-                )}
-              </div>
+	const handleSignInWithGoogle = async () => {
+		setPendingGoogle(true);
+		await authClient.signIn.social({
+			provider: "google",
+			callbackURL: "/dashboard",
+		});
+		setPendingGoogle(false);
+	};
 
-              {/* Password Field */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium" htmlFor="password">
-                    Password
-                  </label>
-                  <Button
-                    variant="link"
-                    className="text-sm px-0 h-auto text-black dark:text-white"
-                  >
-                    <Link href="/forgot-password" className="text-primary hover:underline">
-                      Forgot password?
-                    </Link>
-                  </Button>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    className="pl-10 pr-10"
-                    {...register("password")}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-                {errors.password && (
-                  <p className="text-xs text-destructive">Password is Required</p>
-                )}
-              </div>
+	if (step === "totp") {
+		return (
+			<div className="mx-auto space-y-6 sm:w-sm">
+				<Logo className="h-4.5 lg:hidden" />
+				<div className="flex flex-col space-y-1">
+					<h1 className="font-bold text-2xl tracking-wide">
+						Two-factor authentication
+					</h1>
+					<p className="text-base text-muted-foreground">
+						Enter the 6-digit code from your authenticator app.
+					</p>
+				</div>
 
-              {/* Remember Me */}
-              <div className="flex items-center space-x-2">
-                <Checkbox id="remember" />
-                <label htmlFor="remember" className="text-sm text-muted-foreground">
-                  Remember me for 30 days
-                </label>
-              </div>
+				<div className="flex flex-col items-center space-y-4">
+					<InputOTP
+						maxLength={6}
+						pattern={REGEXP_ONLY_DIGITS}
+						value={totpCode}
+						onChange={setTotpCode}
+						onComplete={handleVerifyTotp}
+						disabled={verifying}
+					>
+						<InputOTPGroup>
+							<InputOTPSlot index={0} />
+							<InputOTPSlot index={1} />
+							<InputOTPSlot index={2} />
+						</InputOTPGroup>
+						<InputOTPSeparator />
+						<InputOTPGroup>
+							<InputOTPSlot index={3} />
+							<InputOTPSlot index={4} />
+							<InputOTPSlot index={5} />
+						</InputOTPGroup>
+					</InputOTP>
 
-              {/* Sign in Button */}
-              <LoadingButton
-                pending={pendingCredentials}
-              >
-                Sign in
-              </LoadingButton>
-            </form>
+					<LoadingButton
+						pending={verifying}
+						onClick={handleVerifyTotp}
+						disabled={totpCode.length < 6}
+					>
+						Verify
+					</LoadingButton>
+				</div>
 
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  OR CONTINUE WITH
-                </span>
-              </div>
-            </div>
+				<p className="text-center text-muted-foreground text-sm">
+					<Button
+						variant="link"
+						className="h-auto p-0 text-sm underline underline-offset-4"
+						onClick={() => {
+							setStep("credentials");
+							setTotpCode("");
+						}}
+					>
+						Back to sign in
+					</Button>
+				</p>
+			</div>
+		);
+	}
 
-            {/* Social Buttons */}
-            <div className="grid grid-cols-2 gap-4">
-              <LoadingButton
-                pending={pendingGoogle}
-                onClick={handleSignInWithGoogle}
-              >
-                <LetterG className="mr-2 h-4 w-4" />
-                Google
-              </LoadingButton>
-              <LoadingButton
-                pending={pendingGithub}
-                onClick={handleSignInWithGithub}
-              >
-                <Github className="mr-2 h-4 w-4" />
-                GitHub
-              </LoadingButton>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-center px-0 mt-4">
-            <div className="text-sm text-center">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/sign-up"
-                className="text-black dark:text-white underline underline-offset-4 hover:text-black/80 dark:hover:text-white/80"
-              >
-                Create an account
-              </Link>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+	return (
+		<div className="mx-auto space-y-4 sm:w-sm">
+			<Logo className="h-4.5 lg:hidden" />
+			<div className="flex flex-col space-y-1">
+				<h1 className="font-bold text-2xl tracking-wide">Welcome back</h1>
+				<p className="text-base text-muted-foreground">
+					Sign in to access your secure vault.
+				</p>
+			</div>
+			<div className="space-y-2">
+				<Button
+					className="w-full"
+					variant="outline"
+					onClick={handleSignInWithGoogle}
+					disabled={pendingGoogle}
+				>
+					<GoogleIcon data-icon="inline-start" />
+					{pendingGoogle ? "Connecting..." : "Continue with Google"}
+				</Button>
+				<Button
+					className="w-full"
+					variant="outline"
+					onClick={handleSignInWithGithub}
+					disabled={pendingGithub}
+				>
+					<GithubIcon data-icon="inline-start" />
+					{pendingGithub ? "Connecting..." : "Continue with GitHub"}
+				</Button>
+			</div>
 
-      {/* Right Side - Gradient Background */}
-      <div className="hidden md:block md:w-1/2 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-800 to-zinc-700 dark:from-black dark:via-zinc-900 dark:to-zinc-800">
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage: `radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.15) 2%, transparent 0%), radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.15) 2%, transparent 0%)`,
-              backgroundSize: "100px 100px",
-            }}
-          ></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center p-8 max-w-md">
-              <h2 className="text-3xl font-bold mb-4 text-white">
-                Secure Access Portal
-              </h2>
-              <p className="text-lg text-zinc-300">
-                Our platform uses industry-leading security protocols to ensure
-                your data remains protected at all times.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+			<div className="flex w-full items-center justify-center">
+				<div className="h-px w-full bg-border" />
+				<span className="px-2 text-muted-foreground text-xs">OR</span>
+				<div className="h-px w-full bg-border" />
+			</div>
+
+			<form
+				onSubmit={handleSubmit(handleCredentialsSignIn)}
+				className="space-y-2"
+			>
+				<div className="space-y-1">
+					<InputGroup>
+						<InputGroupInput
+							placeholder="your.email@example.com"
+							type="email"
+							{...register("email")}
+						/>
+						<InputGroupAddon align="inline-start">
+							<AtSignIcon />
+						</InputGroupAddon>
+					</InputGroup>
+					{errors.email && (
+						<p className="text-xs text-destructive">{errors.email.message}</p>
+					)}
+				</div>
+
+				<div className="space-y-1">
+					<InputGroup>
+						<InputGroupInput
+							placeholder="Password"
+							type={showPassword ? "text" : "password"}
+							{...register("password")}
+						/>
+						<InputGroupAddon align="inline-start">
+							<LockIcon />
+						</InputGroupAddon>
+						<InputGroupAddon align="inline-end">
+							<button
+								type="button"
+								onClick={() => setShowPassword(!showPassword)}
+								className="text-muted-foreground hover:text-foreground"
+								aria-label={showPassword ? "Hide password" : "Show password"}
+							>
+								{showPassword ? (
+									<EyeOffIcon className="size-4" />
+								) : (
+									<EyeIcon className="size-4" />
+								)}
+							</button>
+						</InputGroupAddon>
+					</InputGroup>
+					{errors.password && (
+						<p className="text-xs text-destructive">Password is required</p>
+					)}
+				</div>
+
+				<div className="flex items-center justify-end">
+					<Link
+						href="/forgot-password"
+						className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4"
+					>
+						Forgot password?
+					</Link>
+				</div>
+
+				<LoadingButton pending={pendingCredentials}>Sign in</LoadingButton>
+			</form>
+
+			<p className="text-muted-foreground text-sm">
+				Don&apos;t have an account?{" "}
+				<Link
+					className="underline underline-offset-4 hover:text-foreground"
+					href="/sign-up"
+				>
+					Create an account
+				</Link>
+			</p>
+			<p className="text-muted-foreground text-xs">
+				By signing in, you agree to our{" "}
+				<Link
+					className="underline underline-offset-4 hover:text-foreground"
+					href="/terms"
+				>
+					Terms of Service
+				</Link>{" "}
+				and{" "}
+				<Link
+					className="underline underline-offset-4 hover:text-foreground"
+					href="/privacy"
+				>
+					Privacy Policy
+				</Link>
+				.
+			</p>
+		</div>
+	);
 }
+
+const GoogleIcon = (props: React.ComponentProps<"svg">) => (
+	<svg
+		fill="currentColor"
+		viewBox="0 0 24 24"
+		xmlns="http://www.w3.org/2000/svg"
+		{...props}
+	>
+		<g>
+			<path d="M12.479,14.265v-3.279h11.049c0.108,0.571,0.164,1.247,0.164,1.979c0,2.46-0.672,5.502-2.84,7.669   C18.744,22.829,16.051,24,12.483,24C5.869,24,0.308,18.613,0.308,12S5.869,0,12.483,0c3.659,0,6.265,1.436,8.223,3.307L18.392,5.62   c-1.404-1.317-3.307-2.341-5.913-2.341C7.65,3.279,3.873,7.171,3.873,12s3.777,8.721,8.606,8.721c3.132,0,4.916-1.258,6.059-2.401   c0.927-0.927,1.537-2.251,1.777-4.059L12.479,14.265z" />
+		</g>
+	</svg>
+);
+
+const GithubIcon = (props: React.ComponentProps<"svg">) => (
+	<svg fill="currentColor" viewBox="0 0 1024 1024" {...props}>
+		<path
+			clipRule="evenodd"
+			d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.39 6.01 13.72C4 14.09 3.48 13.23 3.32 12.78C3.23 12.55 2.84 11.84 2.5 11.65C2.22 11.5 1.82 11.13 2.49 11.12C3.12 11.11 3.57 11.7 3.72 11.94C4.44 13.15 5.59 12.81 6.05 12.6C6.12 12.08 6.33 11.73 6.56 11.53C4.78 11.33 2.92 10.64 2.92 7.58C2.92 6.71 3.23 5.99 3.74 5.43C3.66 5.23 3.38 4.41 3.82 3.31C3.82 3.31 4.49 3.1 6.02 4.13C6.66 3.95 7.34 3.86 8.02 3.86C8.7 3.86 9.38 3.95 10.02 4.13C11.55 3.09 12.22 3.31 12.22 3.31C12.66 4.41 12.38 5.23 12.3 5.43C12.81 5.99 13.12 6.7 13.12 7.58C13.12 10.65 11.25 11.33 9.47 11.53C9.76 11.78 10.01 12.26 10.01 13.01C10.01 14.08 10 14.94 10 15.21C10 15.42 10.15 15.67 10.55 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z"
+			fill="currentColor"
+			fillRule="evenodd"
+			transform="scale(64)"
+		/>
+	</svg>
+);

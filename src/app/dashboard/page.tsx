@@ -18,17 +18,16 @@ import {
   Pencil,
   Zap,
   Crown,
+  LayoutGrid,
+  Settings,
+  ChevronDown,
+  Menu,
+  X,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +61,20 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -71,16 +84,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import { Logo } from "@/components/logo";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useSearchParams } from "next/navigation";
+import { cn } from "@/lib/utils";
 import type { VaultEntry } from "@/crypto/entry-crypto";
 import { useVault, type DecryptedItem } from "@/hooks/use-vault";
 import { authClient } from "@/lib/auth-client";
 
 const categories = [
-  { value: "all", label: "All" },
+  { value: "all", label: "All Categories", icon: LayoutGrid },
   { value: "social", label: "Social" },
   { value: "development", label: "Development" },
   { value: "entertainment", label: "Entertainment" },
@@ -101,8 +117,6 @@ const entryFormSchema = z.object({
 const masterPasswordSchema = z.object({
   password: z.string().min(1, "Master password is required"),
 });
-
-const INPUT_CLASS = "bg-white/[0.03] border-white/[0.06] text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-zinc-700 focus-visible:border-zinc-700";
 
 // -- Unlock Screen --
 
@@ -135,18 +149,18 @@ function UnlockScreen({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(30,30,50,0.4)_0%,_transparent_70%)]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(var(--muted))_0%,_transparent_70%)]" />
 
       <div className="relative w-full max-w-sm mx-auto px-6">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] mb-5">
-            <Lock className="h-6 w-6 text-zinc-400" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl border bg-card mb-5">
+            <Lock className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h1 className="text-lg font-medium tracking-tight text-zinc-100">
+          <h1 className="text-lg font-medium tracking-tight text-foreground">
             {isSetup ? "Create Master Password" : "Unlock Vault"}
           </h1>
-          <p className="text-sm text-zinc-500 mt-1.5">
+          <p className="text-sm text-muted-foreground mt-1.5">
             {isSetup
               ? "Choose a strong master password to protect your vault"
               : "Enter your master password to continue"}
@@ -166,7 +180,7 @@ function UnlockScreen({
                         type={showPassword ? "text" : "password"}
                         placeholder="Master password"
                         autoFocus
-                        className={`h-11 pr-10 ${INPUT_CLASS}`}
+                        className="h-11 pr-10"
                         {...field}
                       />
                     </FormControl>
@@ -174,7 +188,7 @@ function UnlockScreen({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-0 top-0 h-full text-zinc-600 hover:text-zinc-400 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full text-muted-foreground hover:text-foreground hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -186,7 +200,7 @@ function UnlockScreen({
             />
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-400/90 bg-red-400/[0.06] rounded-lg px-3 py-2.5 border border-red-400/[0.08]">
+              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2.5 border border-destructive/20">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                 {error}
               </div>
@@ -195,7 +209,7 @@ function UnlockScreen({
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-zinc-100 text-zinc-900 hover:bg-white font-medium"
+              className="w-full h-11 font-medium"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSetup ? "Create Vault" : "Unlock"}
@@ -203,7 +217,7 @@ function UnlockScreen({
           </form>
         </Form>
 
-        <p className="text-center text-[11px] text-zinc-700 mt-6 tracking-wide uppercase">
+        <p className="text-center text-[11px] text-muted-foreground/50 mt-6 tracking-wide uppercase">
           End-to-end encrypted
         </p>
       </div>
@@ -211,9 +225,9 @@ function UnlockScreen({
   );
 }
 
-// -- Entry Card --
+// -- Entry Row (Table) --
 
-function EntryCard({
+function EntryRow({
   item,
   onCopy,
   onEdit,
@@ -234,64 +248,85 @@ function EntryCard({
   };
 
   return (
-    <Card className="group bg-white/[0.02] border-white/[0.05] hover:border-white/[0.1] transition-colors duration-200">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.05] shrink-0">
-              <span className="text-sm font-semibold text-zinc-400 uppercase">
-                {item.entry.serviceName.charAt(0)}
-              </span>
-            </div>
-            <div className="min-w-0">
-              <CardTitle className="text-sm font-medium text-zinc-200 truncate">
-                {item.entry.serviceName}
-              </CardTitle>
-              <p className="text-xs text-zinc-500 truncate mt-0.5 font-mono">
-                {item.entry.username}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Badge variant="outline" className="text-[10px] text-zinc-500 border-white/[0.06] bg-transparent mr-1">
-              {item.entry.category}
-            </Badge>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-600 hover:text-zinc-300" onClick={onEdit}>
-              <Pencil className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-600 hover:text-red-400" onClick={onDelete}>
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2 pt-0">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-8 flex items-center px-2.5 rounded-md bg-white/[0.02] border border-white/[0.04] overflow-hidden">
-            <span className="text-xs text-zinc-400 truncate font-mono">{item.entry.username}</span>
-          </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-zinc-600 hover:text-zinc-300" onClick={() => handleCopy(item.entry.username, "user")}>
-            {copiedField === "user" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-8 flex items-center px-2.5 rounded-md bg-white/[0.02] border border-white/[0.04] overflow-hidden">
-            <span className="text-xs text-zinc-400 truncate font-mono">
-              {showPassword ? item.entry.password : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"}
+    <TableRow className="group">
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg border bg-muted/50 shrink-0">
+            <span className="text-xs font-semibold text-muted-foreground uppercase">
+              {item.entry.serviceName.charAt(0)}
             </span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-zinc-600 hover:text-zinc-300" onClick={() => setShowPassword(!showPassword)}>
-            {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-zinc-600 hover:text-zinc-300" onClick={() => handleCopy(item.entry.password, "pass")}>
-            {copiedField === "pass" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+          <span className="font-medium text-foreground">
+            {item.entry.serviceName}
+          </span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-muted-foreground text-xs">
+            {item.entry.username}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+            onClick={() => handleCopy(item.entry.username, "user")}
+          >
+            {copiedField === "user" ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
           </Button>
         </div>
-        {item.entry.notes && (
-          <p className="text-[11px] text-zinc-600 leading-relaxed pt-1 line-clamp-2">{item.entry.notes}</p>
-        )}
-      </CardContent>
-    </Card>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-muted-foreground text-xs w-24 truncate">
+            {showPassword ? item.entry.password : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+            onClick={() => handleCopy(item.entry.password, "pass")}
+          >
+            {copiedField === "pass" ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+          </Button>
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant="outline" className="text-[10px] font-normal capitalize">
+          {item.entry.category}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onEdit}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom"><p>Edit</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={onDelete}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom"><p>Delete</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -345,12 +380,12 @@ function EntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-950 border-white/[0.06] sm:max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-zinc-100 text-base font-medium">
+          <DialogTitle className="text-base font-medium">
             {initialData ? "Edit Entry" : "New Entry"}
           </DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">
+          <DialogDescription className="text-sm">
             {initialData ? "Update the details for this entry." : "Add a new credential to your vault."}
           </DialogDescription>
         </DialogHeader>
@@ -358,33 +393,33 @@ function EntryDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             <FormField control={form.control} name="serviceName" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-zinc-400 text-xs">Service</FormLabel>
-                <FormControl><Input placeholder="e.g. GitHub" className={INPUT_CLASS} {...field} /></FormControl>
+                <FormLabel className="text-xs">Service</FormLabel>
+                <FormControl><Input placeholder="e.g. GitHub" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="username" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-zinc-400 text-xs">Username / Email</FormLabel>
-                <FormControl><Input placeholder="e.g. user@example.com" className={INPUT_CLASS} {...field} /></FormControl>
+                <FormLabel className="text-xs">Username / Email</FormLabel>
+                <FormControl><Input placeholder="e.g. user@example.com" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="password" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-zinc-400 text-xs">Password</FormLabel>
-                <FormControl><Input type="password" placeholder="Enter password" className={INPUT_CLASS} {...field} /></FormControl>
+                <FormLabel className="text-xs">Password</FormLabel>
+                <FormControl><Input type="password" placeholder="Enter password" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-zinc-400 text-xs">Category</FormLabel>
+                <FormLabel className="text-xs">Category</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger className={INPUT_CLASS}><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                   </FormControl>
-                  <SelectContent className="bg-zinc-950 border-white/[0.06]">
+                  <SelectContent>
                     {categories.filter((c) => c.value !== "all").map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
                     ))}
@@ -395,13 +430,13 @@ function EntryDialog({
             )} />
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-zinc-400 text-xs">Notes (optional)</FormLabel>
-                <FormControl><Textarea placeholder="Any additional notes..." rows={2} className={`${INPUT_CLASS} resize-none`} {...field} /></FormControl>
+                <FormLabel className="text-xs">Notes (optional)</FormLabel>
+                <FormControl><Textarea placeholder="Any additional notes..." rows={2} className="resize-none" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <DialogFooter className="pt-2">
-              <Button type="submit" disabled={saving} className="bg-zinc-100 text-zinc-900 hover:bg-white font-medium">
+              <Button type="submit" disabled={saving} className="font-medium">
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {initialData ? "Save Changes" : "Add Entry"}
               </Button>
@@ -410,6 +445,177 @@ function EntryDialog({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// -- Sidebar --
+
+function Sidebar({
+  userName,
+  userTier,
+  selectedCategory,
+  onCategoryChange,
+  onLock,
+  onUpgrade,
+  checkoutLoading,
+  itemCounts,
+  mobileOpen,
+  onMobileClose,
+}: {
+  userName: string;
+  userTier: string;
+  selectedCategory: string;
+  onCategoryChange: (cat: string) => void;
+  onLock: () => void;
+  onUpgrade: () => void;
+  checkoutLoading: boolean;
+  itemCounts: Record<string, number>;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+}) {
+  const initials = userName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const sidebarContent = (
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 h-14 shrink-0">
+        <Logo className="h-4.5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 lg:hidden"
+          onClick={onMobileClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Separator />
+
+      {/* Categories */}
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest px-2 mb-2">
+          Categories
+        </p>
+        <nav className="space-y-0.5">
+          {categories.map((cat) => {
+            const count = cat.value === "all"
+              ? Object.values(itemCounts).reduce((a, b) => a + b, 0)
+              : (itemCounts[cat.value] ?? 0);
+            return (
+              <button
+                key={cat.value}
+                onClick={() => {
+                  onCategoryChange(cat.value);
+                  onMobileClose();
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
+                  selectedCategory === cat.value
+                    ? "bg-accent text-accent-foreground font-medium"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                )}
+              >
+                <span className="truncate">{cat.label}</span>
+                {count > 0 && (
+                  <span className="text-[10px] tabular-nums text-muted-foreground">
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Upgrade CTA */}
+      {userTier === "free" && (
+        <div className="px-3 pb-2">
+          <button
+            onClick={onUpgrade}
+            disabled={checkoutLoading}
+            className="flex w-full items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-2.5 text-left transition-colors hover:bg-accent"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+              <Zap className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-foreground">Upgrade to Premium</p>
+              <p className="text-[10px] text-muted-foreground">Unlimited entries & more</p>
+            </div>
+          </button>
+        </div>
+      )}
+
+      <Separator />
+
+      {/* User */}
+      <div className="px-3 py-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent">
+              <Avatar className="h-7 w-7">
+                <AvatarFallback className="text-[10px] font-medium bg-muted">
+                  {initials || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{userName || "User"}</p>
+                <div className="flex items-center gap-1">
+                  {userTier === "premium" ? (
+                    <span className="text-[10px] text-amber-500 font-medium flex items-center gap-0.5">
+                      <Crown className="h-2.5 w-2.5" /> Premium
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">Free plan</span>
+                  )}
+                </div>
+              </div>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="top" className="w-48">
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-3.5 w-3.5" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Key className="mr-2 h-3.5 w-3.5" />
+              Change Password
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onLock}>
+              <LogOut className="mr-2 h-3.5 w-3.5" />
+              Lock Vault
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex lg:w-60 lg:shrink-0 lg:flex-col border-r bg-card/50 h-screen sticky top-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile sidebar overlay */}
+      {mobileOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden" onClick={onMobileClose} />
+          <aside className="fixed inset-y-0 left-0 z-50 w-64 border-r bg-background lg:hidden">
+            {sidebarContent}
+          </aside>
+        </>
+      )}
+    </>
   );
 }
 
@@ -425,6 +631,7 @@ export default function VaultDashboard() {
   const [deleteItem, setDeleteItem] = React.useState<DecryptedItem | null>(null);
   const [upgradeSuccess, setUpgradeSuccess] = React.useState(false);
   const [checkoutLoading, setCheckoutLoading] = React.useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (searchParams.get("upgrade") === "success") {
@@ -444,6 +651,15 @@ export default function VaultDashboard() {
       setCheckoutLoading(false);
     }
   };
+
+  const itemCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of vault.items) {
+      const cat = item.entry.category.toLowerCase();
+      counts[cat] = (counts[cat] ?? 0) + 1;
+    }
+    return counts;
+  }, [vault.items]);
 
   const filtered = React.useMemo(() => {
     let result = vault.items;
@@ -485,8 +701,8 @@ export default function VaultDashboard() {
 
   if (vault.loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black">
-        <Loader2 className="h-5 w-5 animate-spin text-zinc-600" />
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -500,182 +716,165 @@ export default function VaultDashboard() {
     );
   }
 
-  const initials = vault.userName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const totalEntries = vault.items.length;
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100">
-      <header className="sticky top-0 z-40 border-b border-white/[0.04] bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-6xl flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-3">
-            <Shield className="h-4.5 w-4.5 text-zinc-500" />
-            <span className="text-sm font-semibold tracking-tight text-zinc-300">Lockr</span>
-            {vault.userTier === "premium" ? (
-              <Badge className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-widest hover:bg-amber-500/10">
-                <Crown className="h-2.5 w-2.5 mr-1" />
-                Premium
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-[10px] border-white/[0.06] text-zinc-500 bg-transparent uppercase tracking-widest">
-                Free
-              </Badge>
-            )}
+    <div className="flex min-h-screen bg-background text-foreground">
+      <Sidebar
+        userName={vault.userName}
+        userTier={vault.userTier}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        onLock={vault.lock}
+        onUpgrade={handleUpgradeCheckout}
+        checkoutLoading={checkoutLoading}
+        itemCounts={itemCounts}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
+
+      {/* Main Content */}
+      <main className="flex-1 min-w-0">
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b bg-background/80 backdrop-blur-xl px-6 h-14">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 lg:hidden shrink-0"
+            onClick={() => setMobileSidebarOpen(true)}
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+
+          <div className="flex-1 flex items-center gap-4 min-w-0">
+            <div>
+              <h1 className="text-sm font-medium text-foreground truncate">
+                {selectedCategory === "all" ? "All Entries" : categories.find(c => c.value === selectedCategory)?.label}
+              </h1>
+              <p className="text-[11px] text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
+                {vault.userTier === "free" && ` / ${50 - totalEntries} remaining`}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-600" />
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative hidden sm:block">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search vault..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-56 h-8 pl-8 text-xs ${INPUT_CLASS}`}
+                className="w-52 h-8 pl-8 text-xs"
               />
             </div>
-
-            {vault.userTier === "free" && (
-              <Button
-                size="sm"
-                onClick={handleUpgradeCheckout}
-                disabled={checkoutLoading}
-                className="h-8 bg-gradient-to-r from-amber-500/90 to-orange-500/90 text-white hover:from-amber-500 hover:to-orange-500 text-xs font-medium border-0"
-              >
-                {checkoutLoading ? (
-                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                ) : (
-                  <Zap className="mr-1.5 h-3 w-3" />
-                )}
-                Upgrade
-              </Button>
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                  <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-white/[0.06] text-zinc-400 text-[10px] font-medium">
-                      {initials || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 bg-zinc-950 border-white/[0.06]">
-                <DropdownMenuItem className="text-zinc-400 text-xs focus:bg-white/[0.04] focus:text-zinc-200">
-                  <Key className="mr-2 h-3.5 w-3.5" />
-                  Change Password
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/[0.04]" />
-                <DropdownMenuItem onClick={vault.lock} className="text-zinc-400 text-xs focus:bg-white/[0.04] focus:text-zinc-200">
-                  <LogOut className="mr-2 h-3.5 w-3.5" />
-                  Lock Vault
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-6 py-8">
-        {upgradeSuccess && (
-          <div className="mb-6 flex items-center gap-2 text-sm text-emerald-400/90 bg-emerald-400/[0.06] rounded-lg px-4 py-3 border border-emerald-400/[0.08]">
-            <Check className="h-3.5 w-3.5 shrink-0" />
-            Welcome to Premium! Your vault now supports unlimited entries, Argon2id encryption, and recovery keys.
-            <button onClick={() => setUpgradeSuccess(false)} className="ml-auto text-emerald-400/50 hover:text-emerald-400">
-              &times;
-            </button>
-          </div>
-        )}
-
-        {vault.error && (
-          <div className="mb-6 flex items-center gap-2 text-sm text-red-400/90 bg-red-400/[0.06] rounded-lg px-4 py-3 border border-red-400/[0.08]">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            {vault.error}
-            <button onClick={() => vault.setError(null)} className="ml-auto text-red-400/50 hover:text-red-400">
-              &times;
-            </button>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-base font-medium text-zinc-200">
-              Welcome back{vault.userName ? `, ${vault.userName.split(" ")[0]}` : ""}
-            </h2>
-            <p className="text-xs text-zinc-600 mt-0.5">
-              {vault.items.length} {vault.items.length === 1 ? "entry" : "entries"} in your vault
-              {vault.userTier === "free" && ` (${50 - vault.items.length} remaining)`}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-32 h-8 bg-white/[0.03] border-white/[0.05] text-xs text-zinc-400 focus:ring-zinc-700">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/[0.06]">
-                {categories.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value} className="text-xs">{cat.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button size="sm" onClick={() => setAddOpen(true)} className="h-8 bg-zinc-100 text-zinc-900 hover:bg-white text-xs font-medium">
+            <Button size="sm" onClick={() => setAddOpen(true)} className="h-8 text-xs font-medium">
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               Add Entry
             </Button>
           </div>
-        </div>
+        </header>
 
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mb-4">
-              <Shield className="h-5 w-5 text-zinc-700" />
+        <div className="px-6 py-6">
+          {/* Mobile search */}
+          <div className="relative sm:hidden mb-4">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search vault..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-9 pl-8 text-xs"
+            />
+          </div>
+
+          {/* Alerts */}
+          {upgradeSuccess && (
+            <div className="mb-4 flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-4 py-3 border border-emerald-500/20">
+              <Check className="h-3.5 w-3.5 shrink-0" />
+              Welcome to Premium! Your vault now supports unlimited entries, Argon2id encryption, and recovery keys.
+              <button onClick={() => setUpgradeSuccess(false)} className="ml-auto opacity-50 hover:opacity-100">
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
-            <p className="text-sm text-zinc-500">
-              {vault.items.length === 0 ? "Your vault is empty" : "No matching entries"}
-            </p>
-            <p className="text-xs text-zinc-700 mt-1">
-              {vault.items.length === 0 ? "Add your first credential to get started" : "Try a different search or category"}
-            </p>
-            {vault.items.length === 0 && (
-              <Button size="sm" onClick={() => setAddOpen(true)} className="mt-4 h-8 bg-zinc-100 text-zinc-900 hover:bg-white text-xs font-medium">
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Add Entry
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((item) => (
-              <EntryCard key={item.id} item={item} onCopy={handleCopy} onEdit={() => setEditItem(item)} onDelete={() => setDeleteItem(item)} />
-            ))}
-          </div>
-        )}
+          )}
+
+          {vault.error && (
+            <div className="mb-4 flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-4 py-3 border border-destructive/20">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {vault.error}
+              <button onClick={() => vault.setError(null)} className="ml-auto opacity-50 hover:opacity-100">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Table or Empty State */}
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="w-12 h-12 rounded-2xl border bg-muted/50 flex items-center justify-center mb-4">
+                <Shield className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {totalEntries === 0 ? "Your vault is empty" : "No matching entries"}
+              </p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                {totalEntries === 0 ? "Add your first credential to get started" : "Try a different search or category"}
+              </p>
+              {totalEntries === 0 && (
+                <Button size="sm" onClick={() => setAddOpen(true)} className="mt-4 h-8 text-xs font-medium">
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Add Entry
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[200px]">Service</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Password</TableHead>
+                    <TableHead className="w-[120px]">Category</TableHead>
+                    <TableHead className="w-[80px] text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((item) => (
+                    <EntryRow
+                      key={item.id}
+                      item={item}
+                      onCopy={handleCopy}
+                      onEdit={() => setEditItem(item)}
+                      onDelete={() => setDeleteItem(item)}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
       </main>
 
+      {/* Dialogs */}
       <EntryDialog open={addOpen} onOpenChange={setAddOpen} onSave={handleAddEntry} saving={vault.saving} />
       <EntryDialog open={!!editItem} onOpenChange={(open) => !open && setEditItem(null)} onSave={handleEditEntry} initialData={editItem?.entry} saving={vault.saving} />
 
       <AlertDialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
-        <AlertDialogContent className="bg-zinc-950 border-white/[0.06]">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-zinc-100 text-base">Delete entry?</AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-500 text-sm">
+            <AlertDialogTitle className="text-base">Delete entry?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
               This will permanently remove{" "}
-              <span className="text-zinc-300">{deleteItem?.entry.serviceName}</span> from your vault.
+              <span className="font-medium text-foreground">{deleteItem?.entry.serviceName}</span> from your vault.
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-white/[0.06] text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteEntry} className="bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEntry} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

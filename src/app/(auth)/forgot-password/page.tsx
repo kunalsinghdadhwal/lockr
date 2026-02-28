@@ -1,23 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import LoadingButton from "@/components/loading-button";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { forgotPasswordSchema } from "@/lib/zod";
 import { authClient } from "@/lib/auth-client";
 import { useToast } from "@/hooks/use-toast";
-import { forgotPasswordSchema } from "@/lib/zod";
+import { AtSignIcon } from "lucide-react";
+import type { z } from "zod";
+
+import { Logo } from "@/components/logo";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from "@/components/ui/input-group";
+import LoadingButton from "@/components/loading-button";
 
 export default function ForgotPassword() {
 	const { toast } = useToast();
@@ -54,39 +53,49 @@ export default function ForgotPassword() {
 	};
 
 	return (
-		<div className="grow flex items-center justify-center p-4">
-			<Card className="w-full max-w-md">
-				<CardHeader>
-					<CardTitle className="text-3xl font-bold text-center text-gray-800">
-						Forgot Password
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-							<FormField
-								control={form.control}
-								name="email"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Email</FormLabel>
-										<FormControl>
-											<Input
-												type="email"
-												placeholder="Enter your email"
-												{...field}
-												autoComplete="email"
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							<LoadingButton pending={isPending}>Send Reset Link</LoadingButton>
-						</form>
-					</Form>
-				</CardContent>
-			</Card>
+		<div className="mx-auto space-y-4 sm:w-sm">
+			<Logo className="h-4.5 lg:hidden" />
+			<div className="flex flex-col space-y-1">
+				<h1 className="font-bold text-2xl tracking-wide">Forgot password</h1>
+				<p className="text-base text-muted-foreground">
+					Enter your email and we will send you a reset link.
+				</p>
+			</div>
+
+			<form
+				onSubmit={form.handleSubmit(onSubmit)}
+				className="space-y-2"
+			>
+				<div className="space-y-1">
+					<InputGroup>
+						<InputGroupInput
+							placeholder="your.email@example.com"
+							type="email"
+							{...form.register("email")}
+						/>
+						<InputGroupAddon align="inline-start">
+							<AtSignIcon />
+						</InputGroupAddon>
+					</InputGroup>
+					{form.formState.errors.email && (
+						<p className="text-xs text-destructive">
+							{form.formState.errors.email.message}
+						</p>
+					)}
+				</div>
+
+				<LoadingButton pending={isPending}>Send Reset Link</LoadingButton>
+			</form>
+
+			<p className="text-muted-foreground text-sm">
+				Remember your password?{" "}
+				<Link
+					className="underline underline-offset-4 hover:text-foreground"
+					href="/sign-in"
+				>
+					Sign in
+				</Link>
+			</p>
 		</div>
 	);
 }

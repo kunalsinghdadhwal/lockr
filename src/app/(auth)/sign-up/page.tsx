@@ -1,408 +1,385 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpSchema } from "@/lib/zod";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useTheme } from "next-themes";
-import { Eye, EyeOff, Lock, User, Mail, AlertTriangle } from "lucide-react";
+import {
+	AtSignIcon,
+	LockIcon,
+	UserIcon,
+	EyeIcon,
+	EyeOffIcon,
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/logo";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from "@/components/ui/input-group";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
-import { Progress } from "@/components/ui/progress";
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSlot,
+	InputOTPSeparator,
+} from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import LoadingButton from "@/components/loading-button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 type SignUpValues = {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
+	name: string;
+	email: string;
+	password: string;
+	confirmPassword: string;
 };
 
-export default function SignUp() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
+type Step = "register" | "verify-otp";
 
-  // States for password UI
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [pending, setPending] = useState(false);
+export default function SignUpPage() {
+	const router = useRouter();
+	const { toast } = useToast();
 
-  // Using the signUpSchema from your lib
-  const form = useForm<SignUpValues>({
-    resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
+	const [step, setStep] = useState<Step>("register");
+	const [email, setEmail] = useState("");
+	const [otp, setOtp] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const [passwordStrength, setPasswordStrength] = useState(0);
+	const [pending, setPending] = useState(false);
+	const [verifying, setVerifying] = useState(false);
+	const [resending, setResending] = useState(false);
 
-  // Calculate password strength based on common criteria.
-  const calculatePasswordStrength = (password: string) => {
-    let strength = 0;
-    if (password.length >= 8) strength += 25;
-    if (/[A-Z]/.test(password)) strength += 25;
-    if (/[a-z]/.test(password)) strength += 25;
-    if (/[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) strength += 25;
-    setPasswordStrength(strength);
-  };
+	const form = useForm<SignUpValues>({
+		resolver: zodResolver(signUpSchema),
+		defaultValues: {
+			name: "",
+			email: "",
+			password: "",
+			confirmPassword: "",
+		},
+	});
 
-  // Submit handler: using your authClient.signUp logic
-  const onSubmit = async (values: SignUpValues) => {
-    await authClient.signUp.email(
-      {
-        email: values.email,
-        password: values.password,
-        name: values.name,
-      },
-      {
-        onRequest: () => {
-          setPending(true);
-        },
-        onSuccess: () => {
-          toast({
-            title: "Account created",
-            description:
-              "Your account has been created. Check your email for a verification link.",
-          });
-          router.push("/sign-in");
-        },
-        onError: (ctx) => {
-          toast({
-            title: "Something went wrong",
-            description: ctx.error.message ?? "Something went wrong.",
-          });
-        },
-      }
-    );
-    setPending(false);
-  };
+	const calculatePasswordStrength = (password: string) => {
+		let strength = 0;
+		if (password.length >= 8) strength += 25;
+		if (/[A-Z]/.test(password)) strength += 25;
+		if (/[a-z]/.test(password)) strength += 25;
+		if (/[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password))
+			strength += 25;
+		setPasswordStrength(strength);
+	};
 
-  return (
-    <div className="min-h-screen flex">
-      {/* Theme toggle button */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          aria-label={
-            theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-          }
-        >
-          {theme === "dark" ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-sun"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-moon"
-            >
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
-          )}
-        </Button>
-      </div>
+	const onSubmit = async (values: SignUpValues) => {
+		setPending(true);
+		await authClient.signUp.email(
+			{
+				email: values.email,
+				password: values.password,
+				name: values.name,
+			},
+			{
+				onSuccess: async () => {
+					setEmail(values.email);
+					await authClient.emailOtp.sendVerificationOtp({
+						email: values.email,
+						type: "email-verification",
+					});
+					setStep("verify-otp");
+				},
+				onError: (ctx) => {
+					toast({
+						title: "Something went wrong",
+						description: ctx.error.message ?? "Something went wrong.",
+						variant: "destructive",
+					});
+				},
+			},
+		);
+		setPending(false);
+	};
 
-      {/* Left side - Signup Form */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-6 bg-background">
-        <Card className="w-full max-w-md border-0 shadow-none bg-transparent">
-          <CardHeader className="space-y-1 px-0">
-            <CardTitle className="text-3xl font-bold text-center">
-              Create Account
-            </CardTitle>
-            <CardDescription className="text-center">
-              Enter your information to create your secure vault
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-0">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                {/* Name Field */}
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            placeholder="Your name"
-                            className="pl-10"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+	const handleVerifyOtp = async () => {
+		setVerifying(true);
+		const { error } = await authClient.emailOtp.verifyEmail({
+			email,
+			otp,
+		});
+		if (error) {
+			toast({
+				title: "Verification failed",
+				description: error.message ?? "Invalid or expired code.",
+				variant: "destructive",
+			});
+		} else {
+			router.push("/dashboard");
+			router.refresh();
+		}
+		setVerifying(false);
+	};
 
-                {/* Email Field */}
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            placeholder="john.doe@example.com"
-                            type="email"
-                            className="pl-10"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+	const handleResendOtp = async () => {
+		setResending(true);
+		const { error } = await authClient.emailOtp.sendVerificationOtp({
+			email,
+			type: "email-verification",
+		});
+		if (error) {
+			toast({
+				title: "Failed to resend",
+				description: error.message ?? "Could not resend code.",
+				variant: "destructive",
+			});
+		} else {
+			toast({
+				title: "Code sent",
+				description: "A new verification code has been sent to your email.",
+			});
+		}
+		setResending(false);
+	};
 
-                {/* Password Field with strength indicator */}
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            placeholder="••••••••"
-                            type={showPassword ? "text" : "password"}
-                            className="pl-10 pr-10"
-                            {...field}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              calculatePasswordStrength(e.target.value);
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowPassword(!showPassword)}
-                            aria-label={
-                              showPassword ? "Hide password" : "Show password"
-                            }
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </Button>
-                        </div>
-                      </FormControl>
-                      {field.value && (
-                        <div className="space-y-1 mt-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span>Password strength:</span>
-                            <span
-                              className={
-                                passwordStrength <= 25
-                                  ? "text-destructive"
-                                  : passwordStrength <= 50
-                                    ? "text-amber-500"
-                                    : passwordStrength <= 75
-                                      ? "text-yellow-500"
-                                      : "text-green-500"
-                              }
-                            >
-                              {passwordStrength <= 25
-                                ? "Weak"
-                                : passwordStrength <= 50
-                                  ? "Fair"
-                                  : passwordStrength <= 75
-                                    ? "Good"
-                                    : "Strong"}
-                            </span>
-                          </div>
-                          <Progress value={passwordStrength} className="h-1" />
-                        </div>
-                      )}
-                      <FormDescription>
-                        Must be at least 8 characters with uppercase, lowercase,
-                        number and special character.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+	const passwordValue = form.watch("password");
 
-                {/* Confirm Password Field */}
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                          <Input
-                            placeholder="••••••••"
-                            type={showConfirmPassword ? "text" : "password"}
-                            className="pl-10 pr-10"
-                            {...field}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }
-                            aria-label={
-                              showConfirmPassword
-                                ? "Hide password"
-                                : "Show password"
-                            }
-                          >
-                            {showConfirmPassword ? (
-                              <EyeOff className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <LoadingButton
-                  pending={pending}
-                >
-                  Create Account
-                </LoadingButton>
-              </form>
-            </Form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4 px-0">
-            <Alert className="mb-6 border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                By creating an account, you acknowledge that we cannot retrieve
-                your master password. Please ensure you remember it, Agree to
-                our{" "}
-                <Link
-                  href="/terms"
-                  className="underline underline-offset-2 hover:text-black/80 dark:hover:text-white/80"
-                >
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="/privacy"
-                  className="underline underline-offset-2 hover:text-black/80 dark:hover:text-white/80"
-                >
-                  Privacy Policy
-                </Link>
-                .
-              </AlertDescription>
-            </Alert>
-            <div className="text-sm text-center">
-              Already have an account?{" "}
-              <Link
-                href="/sign-in"
-                className="text-black dark:text-white underline underline-offset-4 hover:text-black/80 dark:hover:text-white/80"
-              >
-                Sign in
-              </Link>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+	if (step === "verify-otp") {
+		return (
+			<div className="mx-auto space-y-6 sm:w-sm">
+				<Logo className="h-4.5 lg:hidden" />
+				<div className="flex flex-col space-y-1">
+					<h1 className="font-bold text-2xl tracking-wide">
+						Check your email
+					</h1>
+					<p className="text-base text-muted-foreground">
+						We sent a 6-digit code to{" "}
+						<span className="font-medium text-foreground">{email}</span>
+					</p>
+				</div>
 
-      {/* Right side - Gradient background */}
-      <div className="hidden md:block md:w-1/2 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-800 to-zinc-700 dark:from-black dark:via-zinc-900 dark:to-zinc-800">
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage: `radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.15) 2%, transparent 0%), radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.15) 2%, transparent 0%)`,
-              backgroundSize: "100px 100px",
-            }}
-          ></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center p-8 max-w-md">
-              <h2 className="text-3xl font-bold mb-4 text-white">
-                Secure Password Manager
-              </h2>
-              <p className="text-lg text-zinc-300">
-                Keep all your credentials safe and accessible across all your
-                devices with industry-leading encryption.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+				<div className="flex flex-col items-center space-y-4">
+					<InputOTP
+						maxLength={6}
+						pattern={REGEXP_ONLY_DIGITS}
+						value={otp}
+						onChange={setOtp}
+						onComplete={handleVerifyOtp}
+						disabled={verifying}
+					>
+						<InputOTPGroup>
+							<InputOTPSlot index={0} />
+							<InputOTPSlot index={1} />
+							<InputOTPSlot index={2} />
+						</InputOTPGroup>
+						<InputOTPSeparator />
+						<InputOTPGroup>
+							<InputOTPSlot index={3} />
+							<InputOTPSlot index={4} />
+							<InputOTPSlot index={5} />
+						</InputOTPGroup>
+					</InputOTP>
+
+					<LoadingButton
+						pending={verifying}
+						onClick={handleVerifyOtp}
+						disabled={otp.length < 6}
+					>
+						Verify
+					</LoadingButton>
+				</div>
+
+				<p className="text-center text-muted-foreground text-sm">
+					Didn&apos;t receive a code?{" "}
+					<Button
+						variant="link"
+						className="h-auto p-0 text-sm underline underline-offset-4"
+						onClick={handleResendOtp}
+						disabled={resending}
+					>
+						{resending ? "Sending..." : "Resend code"}
+					</Button>
+				</p>
+			</div>
+		);
+	}
+
+	return (
+		<div className="mx-auto space-y-4 sm:w-sm">
+			<Logo className="h-4.5 lg:hidden" />
+			<div className="flex flex-col space-y-1">
+				<h1 className="font-bold text-2xl tracking-wide">Create account</h1>
+				<p className="text-base text-muted-foreground">
+					Set up your secure vault in seconds.
+				</p>
+			</div>
+
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+				<div className="space-y-1">
+					<InputGroup>
+						<InputGroupInput
+							placeholder="Your name"
+							type="text"
+							{...form.register("name")}
+						/>
+						<InputGroupAddon align="inline-start">
+							<UserIcon />
+						</InputGroupAddon>
+					</InputGroup>
+					{form.formState.errors.name && (
+						<p className="text-xs text-destructive">
+							{form.formState.errors.name.message}
+						</p>
+					)}
+				</div>
+
+				<div className="space-y-1">
+					<InputGroup>
+						<InputGroupInput
+							placeholder="your.email@example.com"
+							type="email"
+							{...form.register("email")}
+						/>
+						<InputGroupAddon align="inline-start">
+							<AtSignIcon />
+						</InputGroupAddon>
+					</InputGroup>
+					{form.formState.errors.email && (
+						<p className="text-xs text-destructive">
+							{form.formState.errors.email.message}
+						</p>
+					)}
+				</div>
+
+				<div className="space-y-1">
+					<InputGroup>
+						<InputGroupInput
+							placeholder="Password"
+							type={showPassword ? "text" : "password"}
+							{...form.register("password", {
+								onChange: (e) => calculatePasswordStrength(e.target.value),
+							})}
+						/>
+						<InputGroupAddon align="inline-start">
+							<LockIcon />
+						</InputGroupAddon>
+						<InputGroupAddon align="inline-end">
+							<button
+								type="button"
+								onClick={() => setShowPassword(!showPassword)}
+								className="text-muted-foreground hover:text-foreground"
+								aria-label={showPassword ? "Hide password" : "Show password"}
+							>
+								{showPassword ? (
+									<EyeOffIcon className="size-4" />
+								) : (
+									<EyeIcon className="size-4" />
+								)}
+							</button>
+						</InputGroupAddon>
+					</InputGroup>
+					{passwordValue && (
+						<div className="space-y-1">
+							<div className="flex items-center justify-between text-xs">
+								<span className="text-muted-foreground">
+									Password strength:
+								</span>
+								<span
+									className={
+										passwordStrength <= 25
+											? "text-destructive"
+											: passwordStrength <= 50
+												? "text-amber-500"
+												: passwordStrength <= 75
+													? "text-yellow-500"
+													: "text-green-500"
+									}
+								>
+									{passwordStrength <= 25
+										? "Weak"
+										: passwordStrength <= 50
+											? "Fair"
+											: passwordStrength <= 75
+												? "Good"
+												: "Strong"}
+								</span>
+							</div>
+							<Progress value={passwordStrength} className="h-1" />
+						</div>
+					)}
+					{form.formState.errors.password && (
+						<p className="text-xs text-destructive">
+							{form.formState.errors.password.message}
+						</p>
+					)}
+				</div>
+
+				<div className="space-y-1">
+					<InputGroup>
+						<InputGroupInput
+							placeholder="Confirm password"
+							type={showConfirmPassword ? "text" : "password"}
+							{...form.register("confirmPassword")}
+						/>
+						<InputGroupAddon align="inline-start">
+							<LockIcon />
+						</InputGroupAddon>
+						<InputGroupAddon align="inline-end">
+							<button
+								type="button"
+								onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+								className="text-muted-foreground hover:text-foreground"
+								aria-label={
+									showConfirmPassword ? "Hide password" : "Show password"
+								}
+							>
+								{showConfirmPassword ? (
+									<EyeOffIcon className="size-4" />
+								) : (
+									<EyeIcon className="size-4" />
+								)}
+							</button>
+						</InputGroupAddon>
+					</InputGroup>
+					{form.formState.errors.confirmPassword && (
+						<p className="text-xs text-destructive">
+							{form.formState.errors.confirmPassword.message}
+						</p>
+					)}
+				</div>
+
+				<LoadingButton pending={pending}>Create account</LoadingButton>
+			</form>
+
+			<p className="text-muted-foreground text-sm">
+				Already have an account?{" "}
+				<Link
+					className="underline underline-offset-4 hover:text-foreground"
+					href="/sign-in"
+				>
+					Sign in
+				</Link>
+			</p>
+			<p className="text-muted-foreground text-xs">
+				By creating an account, you agree to our{" "}
+				<Link
+					className="underline underline-offset-4 hover:text-foreground"
+					href="/terms"
+				>
+					Terms of Service
+				</Link>{" "}
+				and{" "}
+				<Link
+					className="underline underline-offset-4 hover:text-foreground"
+					href="/privacy"
+				>
+					Privacy Policy
+				</Link>
+				.
+			</p>
+		</div>
+	);
 }

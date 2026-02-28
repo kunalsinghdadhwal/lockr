@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { DecorIcon } from "@/components/ui/decor-icon";
+import { FullWidthDivider } from "@/components/ui/full-width-divider";
 
 type Logo = {
 	src: string;
@@ -8,78 +9,93 @@ type Logo = {
 
 export function LogoCloud() {
 	return (
-		<div className="grid grid-cols-2 border md:grid-cols-4">
-			<LogoCard
-				className="relative border-r border-b bg-secondary dark:bg-secondary/30"
-				logo={{
-					src: "https://storage.efferd.com/logo/nvidia-wordmark.svg",
-					alt: "Nvidia Logo",
-				}}
-			>
-				<DecorIcon className="z-10" position="bottom-right" />
-			</LogoCard>
+		<section className="relative">
+			<FullWidthDivider className="-top-px" />
+			<DecorIcon className="size-4" position="top-left" />
+			<DecorIcon className="size-4" position="top-right" />
 
-			<LogoCard
-				className="border-b md:border-r"
-				logo={{
-					src: "https://storage.efferd.com/logo/supabase-wordmark.svg",
-					alt: "Supabase Logo",
-				}}
-			/>
+			<div className="mx-auto max-w-5xl px-4 py-4 md:px-6">
+				<div className="grid grid-cols-2 border md:grid-cols-4">
+					<LogoCard
+						className="relative border-r border-b bg-secondary dark:bg-secondary/30"
+						logo={{
+							src: "https://storage.efferd.com/logo/nvidia-wordmark.svg",
+							alt: "Nvidia Logo",
+						}}
+					>
+						<DecorIcon className="z-10" position="bottom-right" />
+					</LogoCard>
 
-			<LogoCard
-				className="relative border-r border-b md:bg-secondary dark:md:bg-secondary/30"
-				logo={{
-					src: "https://storage.efferd.com/logo/github-wordmark.svg",
-					alt: "GitHub Logo",
-				}}
-			>
-				<DecorIcon className="z-10" position="bottom-right" />
-				<DecorIcon className="z-10 hidden md:block" position="bottom-left" />
-			</LogoCard>
+					<LogoCard
+						className="border-b md:border-r"
+						logo={{
+							src: "https://storage.efferd.com/logo/supabase-wordmark.svg",
+							alt: "Supabase Logo",
+						}}
+					/>
 
-			<LogoCard
-				className="relative border-b bg-secondary md:bg-background dark:bg-secondary/30 md:dark:bg-background"
-				logo={{
-					src: "https://storage.efferd.com/logo/openai-wordmark.svg",
-					alt: "OpenAI Logo",
-				}}
-			/>
+					<LogoCard
+						className="relative border-r border-b md:bg-secondary dark:md:bg-secondary/30"
+						logo={{
+							src: "https://storage.efferd.com/logo/github-wordmark.svg",
+							alt: "GitHub Logo",
+						}}
+					>
+						<DecorIcon className="z-10" position="bottom-right" />
+						<DecorIcon
+							className="z-10 hidden md:block"
+							position="bottom-left"
+						/>
+					</LogoCard>
 
-			<LogoCard
-				className="relative border-r border-b bg-secondary md:border-b-0 md:bg-background dark:bg-secondary/30 md:dark:bg-background"
-				logo={{
-					src: "https://storage.efferd.com/logo/turso-wordmark.svg",
-					alt: "Turso Logo",
-				}}
-			>
-				<DecorIcon className="z-10 md:hidden" position="bottom-right" />
-			</LogoCard>
+					<LogoCard
+						className="relative border-b bg-secondary md:bg-background dark:bg-secondary/30 md:dark:bg-background"
+						logo={{
+							src: "https://storage.efferd.com/logo/openai-wordmark.svg",
+							alt: "OpenAI Logo",
+						}}
+					/>
 
-			<LogoCard
-				className="border-b bg-background md:border-r md:border-b-0 md:bg-secondary dark:md:bg-secondary/30"
-				logo={{
-					src: "https://storage.efferd.com/logo/clerk-wordmark.svg",
-					alt: "Clerk Logo",
-				}}
-			/>
+					<LogoCard
+						className="relative border-r border-b bg-secondary md:border-b-0 md:bg-background dark:bg-secondary/30 md:dark:bg-background"
+						logo={{
+							src: "https://storage.efferd.com/logo/turso-wordmark.svg",
+							alt: "Turso Logo",
+						}}
+					>
+						<DecorIcon className="z-10 md:hidden" position="bottom-right" />
+					</LogoCard>
 
-			<LogoCard
-				className="border-r"
-				logo={{
-					src: "https://storage.efferd.com/logo/claude-wordmark.svg",
-					alt: "Claude AI Logo",
-				}}
-			/>
+					<LogoCard
+						className="border-b bg-background md:border-r md:border-b-0 md:bg-secondary dark:md:bg-secondary/30"
+						logo={{
+							src: "https://storage.efferd.com/logo/clerk-wordmark.svg",
+							alt: "Clerk Logo",
+						}}
+					/>
 
-			<LogoCard
-				className="bg-secondary dark:bg-secondary/30"
-				logo={{
-					src: "https://storage.efferd.com/logo/vercel-wordmark.svg",
-					alt: "Vercel Logo",
-				}}
-			/>
-		</div>
+					<LogoCard
+						className="border-r"
+						logo={{
+							src: "https://storage.efferd.com/logo/claude-wordmark.svg",
+							alt: "Claude AI Logo",
+						}}
+					/>
+
+					<LogoCard
+						className="bg-secondary dark:bg-secondary/30"
+						logo={{
+							src: "https://storage.efferd.com/logo/vercel-wordmark.svg",
+							alt: "Vercel Logo",
+						}}
+					/>
+				</div>
+			</div>
+
+			<DecorIcon className="size-4" position="bottom-left" />
+			<DecorIcon className="size-4" position="bottom-right" />
+			<FullWidthDivider className="-bottom-px" />
+		</section>
 	);
 }
 

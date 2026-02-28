@@ -3,17 +3,19 @@ export default function LoadingButton({
 	pending,
 	children,
 	onClick,
+	disabled,
 }: {
 	pending: boolean;
 	children: React.ReactNode;
 	onClick?: () => void;
+	disabled?: boolean;
 }) {
 	return (
 		<Button
 			onClick={onClick}
 			className="w-full"
 			type="submit"
-			disabled={pending}
+			disabled={pending || disabled}
 		>
 			{pending ? (
 				<div className="flex items-center justify-center">

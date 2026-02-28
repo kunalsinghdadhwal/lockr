@@ -34,11 +34,9 @@ export function PricingSection() {
 
 	return (
 		<section id="pricing" className="relative py-16 md:py-24">
-			<div className="relative">
-				<DecorIcon className="size-4" position="top-left" />
-				<DecorIcon className="size-4" position="top-right" />
-				<FullWidthDivider className="-top-px" />
-			</div>
+			<DecorIcon className="size-4" position="top-left" />
+			<DecorIcon className="size-4" position="top-right" />
+			<FullWidthDivider className="-top-px" />
 
 			<div className="mx-auto max-w-5xl px-4 md:px-6">
 				<div className="mb-12 flex flex-col items-center text-center">
@@ -165,11 +163,9 @@ export function PricingSection() {
 				</div>
 			</div>
 
-			<div className="relative">
-				<DecorIcon className="size-4" position="bottom-left" />
-				<DecorIcon className="size-4" position="bottom-right" />
-				<FullWidthDivider className="-bottom-px" />
-			</div>
+			<DecorIcon className="size-4" position="bottom-left" />
+			<DecorIcon className="size-4" position="bottom-right" />
+			<FullWidthDivider className="-bottom-px" />
 		</section>
 	);
 }

@@ -1,8 +1,10 @@
 import { db } from "@/db/drizzle";
 import { sendEmail } from "@/helpers/sendEmail";
+import { getResend } from "@/lib/resend";
+import OTPEmail from "../../emails/OTPEmail";
 import { betterAuth, BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { admin, openAPI } from "better-auth/plugins";
+import { admin, openAPI, emailOTP, twoFactor } from "better-auth/plugins";
 import { polar, checkout, portal, webhooks } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 import * as schema from "@/db/schema";
@@ -40,9 +42,33 @@ export const auth = betterAuth({
   plugins: [
     openAPI(),
     admin(),
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 600,
+      async sendVerificationOTP({ email, otp, type }) {
+        await getResend().emails.send({
+          from: "onboarding@resend.dev",
+          to: email,
+          subject:
+            type === "email-verification"
+              ? "Lockr - Verify your email"
+              : type === "sign-in"
+                ? "Lockr - Sign-in code"
+                : "Lockr - Reset your password",
+          react: OTPEmail({ otp, type }),
+        });
+      },
+    }),
+    twoFactor({
+      issuer: "Lockr",
+      totpOptions: {
+        digits: 6,
+        period: 30,
+      },
+    }),
     polar({
       client: polarClient,
-      createCustomerOnSignUp: true,
+      createCustomerOnSignUp: false,
       use: [
         checkout({
           products: [
@@ -83,21 +109,12 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: false,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, token }) => {
-      await sendEmail(
-        user.email,
-        user.name,
-        token,
-        "Lockr Verification Code",
-        "verify"
-      );
-    },
   },
   advanced: {
     cookiePrefix: "lockr",
-    useSecureCookies: true,
+    useSecureCookies: process.env.NODE_ENV === "production",
   },
 } satisfies BetterAuthOptions);
 

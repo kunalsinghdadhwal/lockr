@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Check, X, ArrowRight, Zap, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { authClient } from "@/lib/auth-client";
 
 const tiers = [
@@ -65,153 +64,146 @@ export default function PricingPage() {
   };
 
   return (
-    <>
-      <section className="w-full py-16 md:py-24 lg:py-32">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center text-center space-y-4 mb-16">
-            <Badge
-              variant="outline"
-              className="border-white/10 bg-white/[0.03] text-zinc-400 uppercase tracking-widest text-[10px] px-3 py-1"
+    <section className="w-full py-16 md:py-24 lg:py-32">
+      <div className="mx-auto max-w-5xl px-4 md:px-6">
+        <div className="flex flex-col items-center text-center space-y-4 mb-16">
+          <div className="rounded-sm border bg-card px-3 py-1 text-xs font-medium uppercase tracking-widest shadow-sm">
+            Pricing
+          </div>
+          <h1 className="text-3xl font-bold tracking-tighter text-foreground sm:text-5xl">
+            Simple, transparent pricing
+          </h1>
+          <p className="max-w-[600px] text-muted-foreground md:text-lg">
+            Start free. Upgrade when you need maximum security, unlimited
+            entries, and premium features.
+          </p>
+        </div>
+
+        <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-2">
+          {tiers.map((tier) => (
+            <div
+              key={tier.name}
+              className={`relative rounded-2xl border p-8 flex flex-col ${
+                tier.highlight
+                  ? "border-border/80 bg-card shadow-[0_0_60px_-12px_rgba(0,0,0,0.1)] dark:shadow-[0_0_60px_-12px_rgba(255,255,255,0.08)]"
+                  : "border-border bg-background"
+              }`}
             >
-              Pricing
-            </Badge>
-            <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-              Simple, transparent pricing
-            </h1>
-            <p className="max-w-[600px] text-gray-400 md:text-lg">
-              Start free. Upgrade when you need maximum security, unlimited
-              entries, and premium features.
-            </p>
-          </div>
-
-          <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-2">
-            {tiers.map((tier) => (
-              <div
-                key={tier.name}
-                className={`relative rounded-2xl border p-8 flex flex-col ${
-                  tier.highlight
-                    ? "border-white/20 bg-white/[0.03] shadow-[0_0_60px_-12px_rgba(255,255,255,0.08)]"
-                    : "border-white/[0.06] bg-white/[0.01]"
-                }`}
-              >
-                {tier.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-white text-black text-[10px] font-semibold uppercase tracking-widest px-3 py-1 hover:bg-white">
-                      <Zap className="h-3 w-3 mr-1" />
-                      Recommended
-                    </Badge>
-                  </div>
-                )}
-
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-zinc-200">
-                    {tier.name}
-                  </h2>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-white">
-                      {tier.price}
-                    </span>
-                    <span className="text-sm text-zinc-500">{tier.period}</span>
-                  </div>
-                  <p className="mt-3 text-sm text-zinc-500">
-                    {tier.description}
-                  </p>
+              {tier.highlight && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1 rounded-sm border bg-foreground px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-background shadow-sm">
+                    <Zap className="h-3 w-3" />
+                    Recommended
+                  </span>
                 </div>
+              )}
 
-                <ul className="space-y-3 mb-8 flex-1">
-                  {tier.features.map((feature) => (
-                    <li key={feature.text} className="flex items-start gap-2.5">
-                      {feature.included ? (
-                        <Check className="h-4 w-4 mt-0.5 shrink-0 text-emerald-400" />
-                      ) : (
-                        <X className="h-4 w-4 mt-0.5 shrink-0 text-zinc-700" />
-                      )}
-                      <span
-                        className={`text-sm ${
-                          feature.included ? "text-zinc-300" : "text-zinc-600"
-                        }`}
-                      >
-                        {feature.text}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                {"ctaHref" in tier ? (
-                  <Link href={tier.ctaHref}>
-                    <Button
-                      variant="outline"
-                      className="w-full h-11 border-white/10 text-zinc-300 hover:bg-white/[0.04] hover:text-white"
-                    >
-                      {tier.cta}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button
-                    onClick={handleCheckout}
-                    className="w-full h-11 bg-white text-black hover:bg-zinc-200 font-medium"
-                  >
-                    <Shield className="mr-2 h-4 w-4" />
-                    {tier.cta}
-                  </Button>
-                )}
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-foreground">
+                  {tier.name}
+                </h2>
+                <div className="mt-3 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-foreground">
+                    {tier.price}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {tier.period}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {tier.description}
+                </p>
               </div>
-            ))}
-          </div>
 
-          <div className="mx-auto max-w-3xl mt-20">
-            <h2 className="text-xl font-bold text-center mb-8 text-zinc-200">
-              Detailed Feature Comparison
-            </h2>
-            <div className="overflow-hidden rounded-xl border border-white/[0.06]">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                    <th className="py-3 px-4 text-left font-medium text-zinc-400">
-                      Feature
-                    </th>
-                    <th className="py-3 px-4 text-center font-medium text-zinc-400 w-28">
-                      Free
-                    </th>
-                    <th className="py-3 px-4 text-center font-medium text-zinc-400 w-28">
-                      Premium
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.04]">
-                  {[
-                    ["Vault entries", "50", "Unlimited"],
-                    ["KDF algorithm", "PBKDF2", "Argon2id"],
-                    ["Recovery key", "--", "Yes"],
-                    ["Active sessions", "2", "Unlimited"],
-                    ["Password generator", "Basic", "Advanced"],
-                    ["Vault health report", "Score only", "Full breakdown"],
-                    ["Breach monitoring", "--", "Continuous"],
-                    ["Password history", "--", "25 versions"],
-                    ["FIDO2 / hardware keys", "--", "Yes"],
-                    ["Priority support", "--", "Yes"],
-                    ["Early access", "--", "Yes"],
-                  ].map(([feature, free, premium]) => (
-                    <tr
-                      key={feature}
-                      className="bg-white/[0.01] hover:bg-white/[0.03] transition-colors"
+              <ul className="space-y-3 mb-8 flex-1">
+                {tier.features.map((feature) => (
+                  <li key={feature.text} className="flex items-start gap-2.5">
+                    {feature.included ? (
+                      <Check className="h-4 w-4 mt-0.5 shrink-0 text-foreground" />
+                    ) : (
+                      <X className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground/50" />
+                    )}
+                    <span
+                      className={`text-sm ${
+                        feature.included
+                          ? "text-foreground"
+                          : "text-muted-foreground/50"
+                      }`}
                     >
-                      <td className="py-2.5 px-4 text-zinc-300">{feature}</td>
-                      <td className="py-2.5 px-4 text-center text-zinc-500">
-                        {free}
-                      </td>
-                      <td className="py-2.5 px-4 text-center text-zinc-300">
-                        {premium}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      {feature.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {"ctaHref" in tier ? (
+                <Link href={tier.ctaHref}>
+                  <Button variant="outline" className="w-full h-11">
+                    {tier.cta}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button onClick={handleCheckout} className="w-full h-11">
+                  <Shield className="mr-2 h-4 w-4" />
+                  {tier.cta}
+                </Button>
+              )}
             </div>
+          ))}
+        </div>
+
+        <div className="mx-auto max-w-3xl mt-20">
+          <h2 className="text-xl font-bold text-center mb-8 text-foreground">
+            Detailed Feature Comparison
+          </h2>
+          <div className="overflow-hidden rounded-xl border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-secondary/50">
+                  <th className="py-3 px-4 text-left font-medium text-muted-foreground">
+                    Feature
+                  </th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground w-28">
+                    Free
+                  </th>
+                  <th className="py-3 px-4 text-center font-medium text-muted-foreground w-28">
+                    Premium
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {[
+                  ["Vault entries", "50", "Unlimited"],
+                  ["KDF algorithm", "PBKDF2", "Argon2id"],
+                  ["Recovery key", "--", "Yes"],
+                  ["Active sessions", "2", "Unlimited"],
+                  ["Password generator", "Basic", "Advanced"],
+                  ["Vault health report", "Score only", "Full breakdown"],
+                  ["Breach monitoring", "--", "Continuous"],
+                  ["Password history", "--", "25 versions"],
+                  ["FIDO2 / hardware keys", "--", "Yes"],
+                  ["Priority support", "--", "Yes"],
+                  ["Early access", "--", "Yes"],
+                ].map(([feature, free, premium]) => (
+                  <tr
+                    key={feature}
+                    className="transition-colors hover:bg-secondary/30"
+                  >
+                    <td className="py-2.5 px-4 text-foreground">{feature}</td>
+                    <td className="py-2.5 px-4 text-center text-muted-foreground">
+                      {free}
+                    </td>
+                    <td className="py-2.5 px-4 text-center text-foreground">
+                      {premium}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

@@ -11,7 +11,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="container flex h-16 items-center justify-between px-4 md:px-6">
+      <header className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2 font-bold">
           <Logo />
         </Link>
@@ -29,12 +29,14 @@ export default function MarketingLayout({
             Pricing
           </Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Link href="/sign-in">
-            <Button variant="outline">Login</Button>
+            <Button variant="outline" size="sm">
+              Login
+            </Button>
           </Link>
           <Link href="/sign-up" className="hidden md:block">
-            <Button>Get Started</Button>
+            <Button size="sm">Get Started</Button>
           </Link>
         </div>
       </header>
