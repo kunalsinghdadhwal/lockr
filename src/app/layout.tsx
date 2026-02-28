@@ -20,9 +20,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`bg-white dark:bg-black ${inter.className}`}>
-        <ThemeProvider  >
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <NuqsAdapter>
             <main>{children}</main>
           </NuqsAdapter>
